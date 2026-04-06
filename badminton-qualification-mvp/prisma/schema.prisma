@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("ADMIN")
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  events       Event[]
+  sessions     Session[]
+  uploadBatches UploadBatch[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id                  String               @id @default(cuid())
+  name                String
+  organizerName       String
+  eventDate           DateTime
+  notes               String?
+  status              String               @default("DRAFT")
+  createdById         String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  createdBy           User                 @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  batches             UploadBatch[]
+  verificationRecords VerificationRecord[]
+
+  @@index([eventDate])
+  @@index([createdAt])
+}
+
+model Athlete {
+  id                  String               @id @default(cuid())
+  externalKey         String               @unique
+  name                String
+  gender              String?
+  region              String?
+  organization        String?
+  level               String
+  certificateNo       String?
+  sport               String               @default("羽毛球")
+  certifiedAt         DateTime?
+  sourceName          String
+  sourceUrl           String?
+  sourceType          String               @default("mock")
+  dataStatus          String               @default("演示数据")
+  riskCategory        String               @default("CLEAR")
+  providerKey         String               @default("mock")
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  verificationRecords VerificationRecord[]
+
+  @@index([name])
+  @@index([level])
+}
+
+model UploadBatch {
+  id                 String               @id @default(cuid())
+  eventId            String
+  uploadedById       String
+  originalFileName   String
+  storedFilePath     String?
+  fileType           String
+  status             String               @default("PENDING")
+  detectedNameColumn String?
+  totalRows          Int                  @default(0)
+  processedRows      Int                  @default(0)
+  matchedRows        Int                  @default(0)
+  riskRows           Int                  @default(0)
+  unresolvedRows     Int                  @default(0)
+  columnsJson        String?
+  previewRowsJson    String?
+  rawRowsJson        String?
+  summaryJson        String?
+  errorMessage       String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  event              Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploadedBy         User                 @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  verificationRecords VerificationRecord[]
+
+  @@index([eventId, createdAt])
+}
+
+model VerificationRecord {
+  id                  String             @id @default(cuid())
+  eventId             String
+  batchId             String?
+  athleteId           String?
+  athleteNameInput    String
+  matchedAthleteName  String?
+  matchedLevel        String?
+  matchedGender       String?
+  matchedRegion       String?
+  matchedOrganization String?
+  matchedSourceName   String?
+  status              String
+  riskCategory        String
+  isRisk              Boolean            @default(false)
+  remark              String?
+  rowIndex            Int?
+  rowDataJson         String?
+  queryTime           DateTime           @default(now())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  event               Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  batch               UploadBatch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  athlete             Athlete?           @relation(fields: [athleteId], references: [id], onDelete: SetNull)
+
+  @@index([eventId, createdAt])
+  @@index([batchId])
+  @@index([status])
+  @@index([athleteNameInput])
+}
