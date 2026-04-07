@@ -264,7 +264,7 @@ badminton-qualification-mvp
 5. Build Command 填：
 
 ```bash
-npm install && npm run deploy:build
+npm install --include=dev && npm run deploy:build
 ```
 
 6. Start Command 填：
