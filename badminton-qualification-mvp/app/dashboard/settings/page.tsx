@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DEMO_ACCOUNT_EMAIL } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const athleteCount = await prisma.athlete.count();
 

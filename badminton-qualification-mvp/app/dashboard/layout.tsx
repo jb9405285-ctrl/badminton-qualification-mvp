@@ -5,6 +5,8 @@ import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { LogoutButton } from "@/components/layout/logout-button";
 import { requireUser } from "@/lib/auth/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children
 }: {

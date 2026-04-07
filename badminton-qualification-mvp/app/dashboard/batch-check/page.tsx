@@ -1,6 +1,8 @@
 import { BatchCheckClient } from "@/components/dashboard/batch-check-client";
 import { getEventList, getHistoryList } from "@/lib/services/dashboard-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function BatchCheckPage({
   searchParams
 }: {

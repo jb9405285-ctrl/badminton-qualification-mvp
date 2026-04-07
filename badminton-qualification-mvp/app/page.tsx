@@ -16,7 +16,10 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { PublicShell } from "@/components/layout/public-shell";
 import { DisclaimerCard } from "@/components/search/disclaimer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ensureDemoData } from "@/lib/data/bootstrap";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 const workflowSteps = [
   {
@@ -61,6 +64,8 @@ const capabilityCards = [
 ];
 
 export default async function HomePage() {
+  await ensureDemoData();
+
   const [athleteCount, eventCount, recordCount] = await Promise.all([
     prisma.athlete.count(),
     prisma.event.count(),

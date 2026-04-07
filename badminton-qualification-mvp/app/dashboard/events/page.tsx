@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getEventList } from "@/lib/services/dashboard-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function EventsPage() {
   const events = await getEventList();
 

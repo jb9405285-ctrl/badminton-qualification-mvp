@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDateTime } from "@/lib/format";
 import { getHistoryList } from "@/lib/services/dashboard-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function HistoryPage() {
   const batches = await getHistoryList();
 

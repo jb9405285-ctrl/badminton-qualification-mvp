@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDateTime } from "@/lib/format";
 import { getDashboardSummary } from "@/lib/services/dashboard-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const summary = await getDashboardSummary();
 

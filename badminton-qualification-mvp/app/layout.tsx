@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 
 import { APP_NAME } from "@/lib/constants";
-import { ensureDemoData } from "@/lib/data/bootstrap";
 
 export const metadata: Metadata = {
   title: APP_NAME,
@@ -17,8 +16,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  await ensureDemoData();
-
   return (
     <html lang="zh-CN">
       <body>{children}</body>
