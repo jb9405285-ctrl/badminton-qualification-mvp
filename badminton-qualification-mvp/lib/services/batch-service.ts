@@ -1,14 +1,40 @@
 import type { Prisma } from "@prisma/client";
 
+import { normalizeName } from "@/lib/eligibility";
 import { prisma } from "@/lib/prisma";
-import { exactMatchAthleteByName } from "@/lib/services/athlete-provider";
-import { buildVerificationRecordInput, summarizeVerificationRecords } from "@/lib/services/verification";
+import { searchAthleteByName } from "@/lib/services/athlete-provider";
+import {
+  buildVerificationRecordInputFromSearchResults,
+  summarizeVerificationRecords
+} from "@/lib/services/verification";
 
 type ProcessBatchArgs = {
   batchId: string;
   eventId: string;
   nameColumn: string;
 };
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<R>
+) {
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  await Promise.all(
+    Array.from({ length: workerCount }, async () => {
+      while (nextIndex < items.length) {
+        const currentIndex = nextIndex;
+        nextIndex += 1;
+        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+      }
+    })
+  );
+
+  return results;
+}
 
 export async function processBatchVerification({ batchId, eventId, nameColumn }: ProcessBatchArgs) {
   const batch = await prisma.uploadBatch.findUnique({
@@ -29,39 +55,73 @@ export async function processBatchVerification({ batchId, eventId, nameColumn }:
     where: { batchId }
   });
 
-  const records: Prisma.VerificationRecordUncheckedCreateInput[] = [];
+  const searchCache = new Map<string, ReturnType<typeof searchAthleteByName>>();
+  const rowEntries = rows.map((row, index) => ({ row, index }));
 
-  for (const [index, row] of rows.entries()) {
-    const athleteNameInput = String(row[nameColumn] ?? "").trim();
+  function searchOnce(athleteNameInput: string) {
+    const key = normalizeName(athleteNameInput);
+    const cached = searchCache.get(key);
 
-    if (!athleteNameInput) {
-      records.push({
-        athleteNameInput: "未填写姓名",
-        eventId,
-        batchId,
-        rowIndex: index + 2,
-        rowDataJson: JSON.stringify(row),
-        status: "REVIEW",
-        riskCategory: "REVIEW",
-        isRisk: false,
-        remark: "该行缺少姓名，需人工复核。"
-      });
-      continue;
+    if (cached) {
+      return cached;
     }
 
-    const matches = await exactMatchAthleteByName(athleteNameInput);
+    const promise = searchAthleteByName(athleteNameInput, { includeHint: false });
+    searchCache.set(key, promise);
 
-    records.push(
-      buildVerificationRecordInput({
-        athleteNameInput,
-        eventId,
-        batchId,
-        rowIndex: index + 2,
-        rowDataJson: JSON.stringify(row),
-        matches
-      })
-    );
+    return promise;
   }
+
+  const records: Prisma.VerificationRecordUncheckedCreateInput[] = await mapWithConcurrency(
+    rowEntries,
+    6,
+    async ({ row, index }) => {
+      const athleteNameInput = String(row[nameColumn] ?? "").trim();
+
+      if (!athleteNameInput) {
+        return {
+          athleteNameInput: "未填写姓名",
+          eventId,
+          batchId,
+          rowIndex: index + 2,
+          rowDataJson: JSON.stringify(row),
+          status: "REVIEW",
+          riskCategory: "REVIEW",
+          isRisk: false,
+          remark: "该行缺少姓名，需人工复核。"
+        };
+      }
+
+      try {
+        const payload = await searchOnce(athleteNameInput);
+
+        return buildVerificationRecordInputFromSearchResults({
+          athleteNameInput,
+          eventId,
+          batchId,
+          rowIndex: index + 2,
+          rowDataJson: JSON.stringify(row),
+          matches: payload.results,
+          notFoundRemark: payload.hintMessage || "未在当前实时数据源中查到记录。"
+        });
+      } catch (error) {
+        return {
+          athleteNameInput,
+          eventId,
+          batchId,
+          rowIndex: index + 2,
+          rowDataJson: JSON.stringify(row),
+          status: "REVIEW",
+          riskCategory: "REVIEW",
+          isRisk: false,
+          remark:
+            error instanceof Error
+              ? `查询接口异常，需人工复核。原因：${error.message}`
+              : "查询接口异常，需人工复核。"
+        };
+      }
+    }
+  );
 
   if (records.length > 0) {
     await prisma.verificationRecord.createMany({

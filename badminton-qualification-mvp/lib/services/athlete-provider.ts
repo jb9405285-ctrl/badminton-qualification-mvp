@@ -6,8 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { PublicRealtimeAthleteProvider } from "@/lib/services/public-realtime-provider";
 import type { AthleteSearchRecord, AthleteSearchResponse } from "@/lib/types";
 
+type SearchOptions = {
+  includeHint?: boolean;
+};
+
 export interface SearchAthleteProvider {
-  searchByName(name: string): Promise<AthleteSearchResponse>;
+  searchByName(name: string, options?: SearchOptions): Promise<AthleteSearchResponse>;
 }
 
 export interface VerificationAthleteProvider {
@@ -15,7 +19,7 @@ export interface VerificationAthleteProvider {
 }
 
 class MockAthleteProvider implements SearchAthleteProvider, VerificationAthleteProvider {
-  async searchByName(name: string) {
+  async searchByName(name: string, options?: SearchOptions) {
     await ensureDemoData();
 
     const keyword = name.trim();
@@ -29,10 +33,10 @@ class MockAthleteProvider implements SearchAthleteProvider, VerificationAthleteP
     const exact = candidates.filter((item) => normalizeName(item.name) === normalized);
 
     if (exact.length > 0) {
-      return buildMockResponse(sortAthletesByPriority(exact));
+      return buildMockResponse(sortAthletesByPriority(exact), options);
     }
 
-    return buildMockResponse(sortAthletesByPriority(candidates).slice(0, 10));
+    return buildMockResponse(sortAthletesByPriority(candidates).slice(0, 10), options);
   }
 
   async exactMatchByName(name: string) {
@@ -67,19 +71,21 @@ function toSearchRecord(athlete: Athlete): AthleteSearchRecord {
     sourceName: athlete.sourceName,
     sourceUrl: athlete.sourceUrl,
     sourceMode: "mock_demo",
-    sourceLabel: "演示样例库",
-    sourceNote: "当前结果来自本地演示数据，可用于展示查询、筛查与导出流程。",
+    sourceLabel: "本地数据源",
+    sourceNote: "来自本地补充数据源，请结合赛事规则人工复核。",
     recordStatus: athlete.dataStatus
   };
 }
 
-function buildMockResponse(athletes: Athlete[]): AthleteSearchResponse {
+function buildMockResponse(athletes: Athlete[], options?: SearchOptions): AthleteSearchResponse {
+  const includeHint = options?.includeHint ?? true;
+
   return {
     provider: "mock_demo",
-    sourceSummary: "演示数据",
+    sourceSummary: "本地数据源",
     fallbackUsed: false,
     warningMessage: "",
-    hintMessage: athletes.length === 0 ? "当前演示库中没有找到对应姓名的记录。" : "",
+    hintMessage: includeHint && athletes.length === 0 ? "当前本地数据源中没有找到对应姓名的记录。" : "",
     results: athletes.map(toSearchRecord)
   };
 }
@@ -87,11 +93,11 @@ function buildMockResponse(athletes: Athlete[]): AthleteSearchResponse {
 const mockProvider = new MockAthleteProvider();
 const publicRealtimeProvider = new PublicRealtimeAthleteProvider();
 
-export async function searchAthleteByName(name: string) {
+export async function searchAthleteByName(name: string, options?: SearchOptions) {
   const keyword = name.trim();
 
   try {
-    const realtime = await publicRealtimeProvider.searchByName(keyword);
+    const realtime = await publicRealtimeProvider.searchByName(keyword, options);
 
     if (realtime.results.length > 0) {
       return realtime;
@@ -99,15 +105,15 @@ export async function searchAthleteByName(name: string) {
 
     return realtime;
   } catch (error) {
-    const mock = await mockProvider.searchByName(keyword);
+    const mock = await mockProvider.searchByName(keyword, options);
 
     return {
       ...mock,
       fallbackUsed: true,
       warningMessage:
         error instanceof Error
-          ? `实时公开接口暂时不可用，当前回退到演示数据。原因：${error.message}`
-          : "实时公开接口暂时不可用，当前回退到演示数据。"
+          ? `实时接口暂时不可用，已切换到本地数据源。原因：${error.message}`
+          : "实时接口暂时不可用，已切换到本地数据源。"
     };
   }
 }

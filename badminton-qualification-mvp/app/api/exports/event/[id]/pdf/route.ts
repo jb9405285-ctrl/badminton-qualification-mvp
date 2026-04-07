@@ -17,7 +17,7 @@ async function streamToBuffer(stream: NodeJS.ReadableStream) {
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   {
     params
   }: {
@@ -50,25 +50,70 @@ export async function GET(
     );
   }
 
+  const url = new URL(request.url);
+  const batchId = url.searchParams.get("batchId");
+  const selectedBatch = batchId ? event.batches.find((batch) => batch.id === batchId) : event.batches[0] ?? null;
+  const records = selectedBatch
+    ? event.verificationRecords.filter((record) => record.batchId === selectedBatch.id)
+    : [];
+
+  if (batchId && !selectedBatch) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "核验批次不存在。"
+      },
+      { status: 404 }
+    );
+  }
+
+  if (!selectedBatch) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "当前赛事还没有可导出的核验批次。"
+      },
+      { status: 404 }
+    );
+  }
+
   const summary = {
-    total: event.verificationRecords.length,
-    passed: event.verificationRecords.filter((item) => item.status === "PASSED").length,
-    risk: event.verificationRecords.filter((item) => item.status === "RISK").length,
-    notFound: event.verificationRecords.filter((item) => item.status === "NOT_FOUND").length,
-    review: event.verificationRecords.filter((item) => item.status === "REVIEW").length
+    total: records.length,
+    passed: records.filter((item) => item.status === "PASSED").length,
+    risk: records.filter((item) => item.status === "RISK").length,
+    notFound: records.filter((item) => item.status === "NOT_FOUND").length,
+    review: records.filter((item) => item.status === "REVIEW").length
   };
 
   const stream = await createEventPdfReport({
     eventName: event.name,
     organizerName: event.organizerName,
+    eventDate: event.eventDate,
+    eventNotes: event.notes,
+    batch: {
+      id: selectedBatch.id,
+      fileName: selectedBatch.originalFileName,
+      uploadedAt: selectedBatch.createdAt,
+      totalRows: selectedBatch.totalRows,
+      processedRows: selectedBatch.processedRows,
+      riskRows: selectedBatch.riskRows,
+      unresolvedRows: selectedBatch.unresolvedRows
+    },
     exportedAt: new Date(),
     summary,
-    records: event.verificationRecords.map((record) => ({
+    records: records.map((record) => ({
+      rowIndex: record.rowIndex,
       athleteNameInput: record.athleteNameInput,
+      matchedAthleteName: record.matchedAthleteName,
       matchedLevel: record.matchedLevel,
+      matchedGender: record.matchedGender,
+      matchedRegion: record.matchedRegion,
       status: record.status,
       remark: record.remark,
-      matchedOrganization: record.matchedOrganization
+      matchedOrganization: record.matchedOrganization,
+      matchedSourceName: record.matchedSourceName,
+      isRisk: record.isRisk,
+      queryTime: record.queryTime
     }))
   });
 
@@ -77,7 +122,7 @@ export async function GET(
   return new NextResponse(buffer, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="event-${event.id}-verification-report.pdf"`
+      "Content-Disposition": `attachment; filename="event-${event.id}-batch-${selectedBatch.id}-verification-report.pdf"`
     }
   });
 }

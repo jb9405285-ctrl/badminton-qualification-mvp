@@ -16,8 +16,8 @@ export default async function HistoryPage() {
       description="上传过的所有名单批次都会在这里留痕，便于后续追溯与复盘。"
     />
   ) : (
-    <Card className="bg-white/90">
-      <CardHeader>
+    <Card className="dashboard-panel border-white/80">
+      <CardHeader className="pb-4">
         <CardTitle>核验历史</CardTitle>
         <CardDescription>按上传时间倒序展示每一场赛事的名单处理记录。</CardDescription>
       </CardHeader>
@@ -46,7 +46,10 @@ export default async function HistoryPage() {
                 <TableCell>{batch.riskRows}</TableCell>
                 <TableCell>{formatDateTime(batch.createdAt)}</TableCell>
                 <TableCell>
-                  <Link className="text-primary hover:underline" href={`/dashboard/events/${batch.eventId}`}>
+                  <Link
+                    className="text-primary hover:underline"
+                    href={`/dashboard/events/${batch.eventId}?batchId=${batch.id}`}
+                  >
                     查看赛事详情
                   </Link>
                 </TableCell>

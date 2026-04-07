@@ -46,6 +46,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
+      eventId: parsed.data.eventId,
+      batchId: parsed.data.batchId,
       summary: result.summary
     });
   } catch (error) {

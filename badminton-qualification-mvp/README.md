@@ -18,7 +18,7 @@
 
 项目已创建在：
 
-`/Users/xxiyy/Documents/New project/badminton-qualification-mvp`
+`/Users/xxiyy/Documents/badminton/badminton-qualification-mvp`
 
 ## 2. 启动要求
 
@@ -32,7 +32,7 @@
 先进入项目目录：
 
 ```bash
-cd "/Users/xxiyy/Documents/New project/badminton-qualification-mvp"
+cd "/Users/xxiyy/Documents/badminton/badminton-qualification-mvp"
 ```
 
 复制环境变量：
@@ -57,6 +57,12 @@ npx prisma migrate dev
 
 ```bash
 npm run dev
+```
+
+如果要固定使用本地演示端口 `3001`：
+
+```bash
+npm run dev:local
 ```
 
 打开浏览器访问：
@@ -181,7 +187,7 @@ Prisma 模型包含：
 
 项目自带示例名单文件：
 
-`/Users/xxiyy/Documents/New project/badminton-qualification-mvp/public/templates/demo-roster.csv`
+`/Users/xxiyy/Documents/badminton/badminton-qualification-mvp/public/templates/demo-roster.csv`
 
 你也可以在浏览器中访问：
 
@@ -217,3 +223,98 @@ storage/
 - 暂未接入正式商业授权数据源
 - 实际使用前需核验数据合法性与准确性
 - 这版优先保证 MVP 可运行与可演示，后续适合继续接真实数据源、权限、支付和部署能力
+
+## 11. 免费线上部署方案
+
+当前推荐的免费试运行方案：
+
+- Render Free：运行 Next.js 网站
+- Supabase Free：保存 PostgreSQL 数据库
+- Render Free 没有持久磁盘，所以线上建议设置 `PERSIST_UPLOAD_FILES=false`
+- 名单解析后的行数据、核验结果、风险名单和导出报告所需数据会保存到数据库
+- 原始上传文件本身不作为线上免费环境的可靠持久存储
+
+### 11.1 创建 Supabase 免费数据库
+
+1. 打开 Supabase 并创建免费 PostgreSQL 项目。
+2. 如果直连 `db.<project-ref>.supabase.co:5432` 不通，优先使用 Supabase Connection Pooler。
+3. 当前项目已验证可用的 pooler host 是：
+
+```text
+aws-1-us-east-2.pooler.supabase.com
+```
+
+4. Render 环境变量中的连接串格式类似：
+
+```text
+postgresql://postgres.<project-ref>:PASSWORD@aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+### 11.2 创建 Render Free Web Service
+
+1. 把本项目推送到 GitHub。
+2. 在 Render 新建 `Web Service`，选择该 GitHub 仓库。
+3. 如果 GitHub 仓库根目录是 `/Users/xxiyy/Documents/badminton`，Root Directory 填：
+
+```text
+badminton-qualification-mvp
+```
+
+4. Runtime 选择 Node。
+5. Build Command 填：
+
+```bash
+npm install && npm run deploy:build
+```
+
+6. Start Command 填：
+
+```bash
+npm run start
+```
+
+7. Environment Variables 填：
+
+```text
+DATABASE_URL=Supabase Pooler PostgreSQL 连接串
+PERSIST_UPLOAD_FILES=false
+NODE_ENV=production
+```
+
+推送到 GitHub 前，请确认不要提交本地真实数据文件：
+
+```bash
+cd "/Users/xxiyy/Documents/badminton"
+git rm --cached badminton-qualification-mvp/prisma/dev.db
+git rm --cached badminton-qualification-mvp/.DS_Store .DS_Store
+```
+
+以上命令只会从 Git 跟踪中移除文件，不会删除你电脑上的本地文件。
+
+### 11.3 上线后检查
+
+Render 部署完成后先访问：
+
+```text
+https://你的-render域名/api/health
+```
+
+看到 `{"ok":true,"database":"ok"}` 后，再访问：
+
+```text
+https://你的-render域名/login
+```
+
+演示账号仍是：
+
+```text
+admin@example.com
+password123
+```
+
+### 11.4 免费方案限制
+
+- Render Free 一段时间无人访问后会休眠，客户第一次打开可能需要等待。
+- Supabase Free 数据库也可能有冷启动，但数据会比 Render 本地文件更可靠。
+- 不要把本地 `prisma/dev.db` 当作线上数据库上传到公开仓库。
+- 如果客户开始真实长期使用，建议升级到付费实例并增加备份策略。

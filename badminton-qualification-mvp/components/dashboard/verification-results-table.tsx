@@ -12,10 +12,12 @@ import { formatDateTime } from "@/lib/format";
 
 type VerificationRow = {
   id: string;
+  rowIndex: number | null;
   athleteNameInput: string;
   matchedAthleteName: string | null;
   matchedLevel: string | null;
   matchedOrganization: string | null;
+  matchedSourceName: string | null;
   status: string;
   remark: string | null;
   queryTime: string;
@@ -63,8 +65,8 @@ export function VerificationResultsTable({ records }: { records: VerificationRow
   }
 
   return (
-    <Card className="bg-white/90">
-      <CardHeader>
+    <Card className="dashboard-panel border-white/80">
+      <CardHeader className="pb-4">
         <CardTitle>完整核验结果</CardTitle>
         <CardDescription>支持分页查看、风险高亮以及逐条填写人工备注。</CardDescription>
       </CardHeader>
@@ -72,10 +74,12 @@ export function VerificationResultsTable({ records }: { records: VerificationRow
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>原始行</TableHead>
               <TableHead>名单姓名</TableHead>
               <TableHead>匹配结果</TableHead>
               <TableHead>等级</TableHead>
               <TableHead>单位</TableHead>
+              <TableHead>来源</TableHead>
               <TableHead>状态</TableHead>
               <TableHead>查询时间</TableHead>
               <TableHead>人工备注</TableHead>
@@ -84,21 +88,23 @@ export function VerificationResultsTable({ records }: { records: VerificationRow
           <TableBody>
             {pagedRecords.map((record) => (
               <TableRow
-                className={record.isRisk ? "bg-risk/5" : undefined}
+                className={record.isRisk ? "bg-risk/[0.06] hover:bg-risk/[0.08]" : undefined}
                 key={record.id}
               >
+                <TableCell>{record.rowIndex ?? "--"}</TableCell>
                 <TableCell className="font-medium">{record.athleteNameInput}</TableCell>
                 <TableCell>{record.matchedAthleteName ?? "未查到"}</TableCell>
                 <TableCell>{record.matchedLevel ?? "--"}</TableCell>
                 <TableCell>{record.matchedOrganization ?? "--"}</TableCell>
+                <TableCell>{record.matchedSourceName ?? "--"}</TableCell>
                 <TableCell>
                   <StatusBadge status={record.status} />
                 </TableCell>
                 <TableCell>{formatDateTime(record.queryTime)}</TableCell>
-                <TableCell className="min-w-[280px]">
+                <TableCell className="min-w-[300px]">
                   <div className="space-y-2">
                     <Textarea
-                      className="min-h-[88px]"
+                      className="min-h-[88px] bg-white"
                       onChange={(event) =>
                         setRemarks((current) => ({ ...current, [record.id]: event.target.value }))
                       }

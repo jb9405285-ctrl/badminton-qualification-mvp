@@ -106,7 +106,7 @@ export function BatchCheckClient({
 
       setPendingMapping(null);
       setStatusText("名单已完成批量核验，正在跳转到赛事详情页...");
-      router.push(`/dashboard/events/${payload.eventId}`);
+      router.push(`/dashboard/events/${payload.eventId}?batchId=${payload.batchId}`);
       router.refresh();
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "上传失败。");
@@ -143,7 +143,7 @@ export function BatchCheckClient({
         throw new Error(payload.message || "姓名列确认失败。");
       }
 
-      router.push(`/dashboard/events/${pendingMapping.eventId}`);
+      router.push(`/dashboard/events/${pendingMapping.eventId}?batchId=${pendingMapping.batchId}`);
       router.refresh();
     } catch (confirmError) {
       setError(confirmError instanceof Error ? confirmError.message : "姓名列确认失败。");
@@ -154,8 +154,8 @@ export function BatchCheckClient({
 
   return (
     <div className="grid gap-6">
-      <Card className="bg-white/90">
-        <CardHeader>
+      <Card className="dashboard-panel border-white/80">
+        <CardHeader className="pb-4">
           <CardTitle>批量核验工作台</CardTitle>
           <CardDescription>
             选择赛事后上传 `.xlsx / .xls / .csv` 名单文件，系统会自动识别姓名列并逐个筛查。
@@ -163,7 +163,7 @@ export function BatchCheckClient({
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={handleUpload}>
-            <div className="space-y-2">
+            <div className="dashboard-inset space-y-2 p-4">
               <Label htmlFor="event">赛事</Label>
               <Select id="event" onChange={(event) => setEventId(event.target.value)} value={eventId}>
                 <option value="">请选择赛事</option>
@@ -174,7 +174,7 @@ export function BatchCheckClient({
                 ))}
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="dashboard-inset space-y-2 p-4">
               <Label htmlFor="file">名单文件</Label>
               <Input
                 accept=".xlsx,.xls,.csv"
@@ -184,12 +184,16 @@ export function BatchCheckClient({
               />
             </div>
             {selectedEvent ? (
-              <p className="text-sm text-muted-foreground md:col-span-2">
-                当前将名单核验到赛事：{selectedEvent.name}
-              </p>
+              <div className="dashboard-inset p-4 md:col-span-2">
+                <p className="text-sm text-muted-foreground">当前将名单核验到赛事：{selectedEvent.name}</p>
+              </div>
             ) : null}
-            {statusText ? <p className="text-sm text-primary md:col-span-2">{statusText}</p> : null}
-            {error ? <p className="text-sm text-risk md:col-span-2">{error}</p> : null}
+            {(statusText || error) ? (
+              <div className="dashboard-inset p-4 md:col-span-2">
+                {statusText ? <p className="text-sm text-primary">{statusText}</p> : null}
+                {error ? <p className="text-sm text-risk">{error}</p> : null}
+              </div>
+            ) : null}
             <div className="md:col-span-2">
               <Button disabled={loading || events.length === 0} type="submit">
                 {loading ? "处理中..." : "上传并开始核验"}
@@ -200,15 +204,15 @@ export function BatchCheckClient({
       </Card>
 
       {pendingMapping ? (
-        <Card className="border-warning/30 bg-warning/5">
-          <CardHeader>
+        <Card className="dashboard-panel border-warning/30 bg-warning/5">
+          <CardHeader className="pb-4">
             <CardTitle>请选择姓名列</CardTitle>
             <CardDescription>
               系统未自动识别标准姓名列，请从下方列名中选择哪一列代表参赛选手姓名。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="max-w-sm space-y-2">
+            <div className="dashboard-inset max-w-sm space-y-2 p-4">
               <Label htmlFor="name-column">姓名列</Label>
               <Select
                 id="name-column"
@@ -252,8 +256,8 @@ export function BatchCheckClient({
       ) : null}
 
       {recentBatches.length > 0 ? (
-        <Card className="bg-white/90">
-          <CardHeader>
+        <Card className="dashboard-panel border-white/80">
+          <CardHeader className="pb-4">
             <CardTitle>最近批次</CardTitle>
             <CardDescription>可以快速回到最近处理过的名单批次与赛事详情页。</CardDescription>
           </CardHeader>
@@ -280,7 +284,10 @@ export function BatchCheckClient({
                     <TableCell>{batch.riskRows}</TableCell>
                     <TableCell>{formatDate(batch.createdAt, "yyyy-MM-dd HH:mm")}</TableCell>
                     <TableCell>
-                      <Link className="text-primary hover:underline" href={`/dashboard/events/${batch.eventId}`}>
+                      <Link
+                        className="text-primary hover:underline"
+                        href={`/dashboard/events/${batch.eventId}?batchId=${batch.id}`}
+                      >
                         查看赛事详情
                       </Link>
                     </TableCell>

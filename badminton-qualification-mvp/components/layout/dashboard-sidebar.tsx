@@ -27,7 +27,7 @@ export function DashboardSidebar() {
 
   return (
     <aside className="dashboard-grid hidden w-80 shrink-0 border-r border-white/10 bg-[#06111c] px-5 py-6 text-white lg:block">
-      <div className="rounded-[28px] border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(3,7,18,0.92))] p-5 shadow-panel">
+      <div className="rounded-[30px] border border-cyan-400/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(3,7,18,0.92))] p-6 shadow-panel">
         <div className="flex items-center gap-3">
           <div className="rounded-2xl bg-cyan-400/10 p-3 text-cyan-200">
             <ShieldAlert className="h-6 w-6" />
@@ -57,7 +57,7 @@ export function DashboardSidebar() {
                 "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
                 isActive
                   ? "bg-white text-slate-950 shadow-soft"
-                  : "text-slate-200 hover:bg-white/8 hover:text-white"
+                  : "text-slate-200/92 hover:bg-white/8 hover:text-white"
               )}
               href={item.href}
               key={item.href}

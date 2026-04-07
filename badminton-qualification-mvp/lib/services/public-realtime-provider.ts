@@ -21,10 +21,16 @@ type DetailPayload = {
   audit_danwei_time?: string;
 };
 
+type SearchOptions = {
+  includeHint?: boolean;
+};
+
 const responseCache = new Map<string, { expiresAt: number; payload: AthleteSearchResponse }>();
 
-function getCacheKey(name: string) {
-  return normalizeName(name);
+function getCacheKey(name: string, options?: SearchOptions) {
+  const hintMode = options?.includeHint === false ? "lean" : "full";
+
+  return `${normalizeName(name)}:${hintMode}`;
 }
 
 function buildHeaders() {
@@ -109,19 +115,20 @@ async function buildHintMessage(name: string) {
       const preview = otherItems.slice(0, 3).join("、");
       const suffix = otherItems.length > 3 ? "等" : "";
 
-      return `公开接口当前没有返回“${name}”的羽毛球记录，但查到了同名其他项目记录，涉及 ${preview}${suffix}。`;
+      return `没有查到“${name}”的羽毛球记录，但查到了同名其他项目：${preview}${suffix}。`;
     }
   } catch {
-    return `公开接口当前没有返回“${name}”的羽毛球记录。`;
+    return `公开接口没有返回“${name}”的羽毛球记录。`;
   }
 
-  return `公开接口当前没有返回“${name}”的羽毛球记录。`;
+  return `公开接口没有返回“${name}”的羽毛球记录。`;
 }
 
 export class PublicRealtimeAthleteProvider {
-  async searchByName(name: string): Promise<AthleteSearchResponse> {
+  async searchByName(name: string, options?: SearchOptions): Promise<AthleteSearchResponse> {
     const keyword = name.trim();
-    const cacheKey = getCacheKey(keyword);
+    const includeHint = options?.includeHint ?? true;
+    const cacheKey = getCacheKey(keyword, options);
     const now = Date.now();
     const cached = responseCache.get(cacheKey);
 
@@ -163,9 +170,9 @@ export class PublicRealtimeAthleteProvider {
           sport: item.item ?? "羽毛球",
           sourceName: "体教联盟运动员技术等级查询",
           sourceUrl: UPSTREAM_REFERER,
-          sourceMode: "public_realtime",
+          sourceMode: "public_realtime" as const,
           sourceLabel: "实时公开接口",
-          sourceNote: "当前结果来自公开接口实时查询，并自动限定为羽毛球项目。",
+          sourceNote: "来自公开接口，已限定为羽毛球项目。",
           recordStatus: "实时查询"
         };
       })
@@ -185,7 +192,7 @@ export class PublicRealtimeAthleteProvider {
       sourceSummary: "实时公开查询优先",
       fallbackUsed: false,
       warningMessage: "",
-      hintMessage: results.length === 0 ? await buildHintMessage(keyword) : "",
+      hintMessage: includeHint && results.length === 0 ? await buildHintMessage(keyword) : "",
       results
     };
 

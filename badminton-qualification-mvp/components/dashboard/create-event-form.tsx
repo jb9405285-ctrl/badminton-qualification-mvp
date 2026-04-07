@@ -54,14 +54,14 @@ export function CreateEventForm() {
   }
 
   return (
-    <Card className="bg-white/90">
-      <CardHeader>
+    <Card className="dashboard-panel border-white/80">
+      <CardHeader className="pb-4">
         <CardTitle>创建赛事</CardTitle>
         <CardDescription>创建一个赛事后，即可上传报名名单并执行批量资格核验。</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-          <div className="space-y-2 md:col-span-2">
+          <div className="dashboard-inset space-y-2 p-4 md:col-span-2">
             <Label htmlFor="event-name">赛事名称</Label>
             <Input
               id="event-name"
@@ -70,7 +70,7 @@ export function CreateEventForm() {
               value={form.name}
             />
           </div>
-          <div className="space-y-2">
+          <div className="dashboard-inset space-y-2 p-4">
             <Label htmlFor="organizer-name">主办方名称</Label>
             <Input
               id="organizer-name"
@@ -81,7 +81,7 @@ export function CreateEventForm() {
               value={form.organizerName}
             />
           </div>
-          <div className="space-y-2">
+          <div className="dashboard-inset space-y-2 p-4">
             <Label htmlFor="event-date">比赛日期</Label>
             <Input
               id="event-date"
@@ -90,7 +90,7 @@ export function CreateEventForm() {
               value={form.eventDate}
             />
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="dashboard-inset space-y-2 p-4 md:col-span-2">
             <Label htmlFor="event-notes">备注</Label>
             <Textarea
               id="event-notes"
@@ -99,8 +99,8 @@ export function CreateEventForm() {
               value={form.notes}
             />
           </div>
-          {error ? <p className="text-sm text-risk md:col-span-2">{error}</p> : null}
-          <div className="md:col-span-2">
+          <div className="flex flex-col gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
+            {error ? <p className="text-sm text-risk">{error}</p> : <div />}
             <Button disabled={loading} type="submit">
               {loading ? "创建中..." : "创建赛事"}
             </Button>

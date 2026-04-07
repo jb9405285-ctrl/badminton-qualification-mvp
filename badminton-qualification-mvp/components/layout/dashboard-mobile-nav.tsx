@@ -26,8 +26,8 @@ export function DashboardMobileNav() {
             className={cn(
               "whitespace-nowrap rounded-full border px-3 py-2 text-sm font-medium transition",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-white text-slate-700"
+                ? "border-primary/20 bg-primary text-primary-foreground shadow-soft"
+                : "border-slate-200/90 bg-white/88 text-slate-700"
             )}
             href={item.href}
             key={item.href}

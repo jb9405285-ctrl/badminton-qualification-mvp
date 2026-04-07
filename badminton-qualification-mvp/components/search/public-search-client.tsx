@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 
-import { AlertTriangle, ArrowUpRight, BadgeInfo, Clock3, IdCard, Search, ShieldAlert, Waves } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, BadgeInfo, Clock3, IdCard, Search } from "lucide-react";
 
 import { DisclaimerCard } from "@/components/search/disclaimer";
 import { Badge } from "@/components/ui/badge";
@@ -96,7 +96,7 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
       return (
         <EmptyState
           title="等待查询"
-          description="输入运动员姓名后，可查看该运动员的等级信息、来源说明和本次查询时间。"
+          description="输入姓名后，可查看等级、来源和查询时间。"
         />
       );
     }
@@ -105,7 +105,7 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
       return (
         <EmptyState
           title="正在查询"
-          description={`正在检索“${query || initialQuery}”的等级记录，系统会优先请求实时公开接口。`}
+          description={`正在检索“${query || initialQuery}”，优先请求实时接口。`}
         />
       );
     }
@@ -118,7 +118,7 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
       return (
         <EmptyState
           title="未查询到相关记录"
-          description={hintMessage || "当前没有查到对应姓名的羽毛球等级记录。"}
+          description={hintMessage || "当前没有查到对应的羽毛球等级记录。"}
         />
       );
     }
@@ -130,30 +130,22 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
             key={record.id}
             className={record.isRisk ? "border-risk/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(254,242,242,0.94))]" : "bg-white/92"}
           >
-            <CardHeader className="gap-4 border-b border-slate-100/90 pb-5 md:flex-row md:items-start md:justify-between">
+            <CardHeader className="gap-4 border-b border-slate-100/90 pb-5">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <CardTitle className="text-2xl">{record.name}</CardTitle>
                   <Badge tone={record.isRisk ? "risk" : "safe"}>{record.level}</Badge>
-                  <Badge tone={record.sourceMode === "public_realtime" ? "default" : "warning"}>
-                    {record.sourceLabel}
-                  </Badge>
                 </div>
                 <CardDescription className="text-sm">
                   {record.gender ?? "性别未标注"} · {record.region ?? "地区未标注"} ·{" "}
                   {record.organization ?? "单位未标注"}
                 </CardDescription>
-                <p className="text-sm leading-6 text-slate-600">{record.sourceNote}</p>
-              </div>
-              <div className="rounded-2xl border border-slate-200/80 bg-slate-50/90 px-4 py-3 text-sm text-slate-600">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">记录状态</p>
-                <p className="mt-2 font-medium text-slate-900">{record.recordStatus}</p>
               </div>
             </CardHeader>
             <CardContent className="grid gap-4 pt-6 text-sm leading-6 text-slate-700 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">数据来源说明</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">数据来源</p>
                   <p className="mt-2">{record.sourceName}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
@@ -177,17 +169,15 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
               </div>
               <div className="space-y-4">
                 <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">项目与风控结论</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">结论</p>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Badge tone="muted">{record.sport || "羽毛球"}</Badge>
                     <Badge tone={record.isRisk ? "risk" : "safe"}>
-                      {record.isRisk ? "存在参赛风险" : "当前未识别风险等级"}
+                      {record.isRisk ? "存在风险" : "当前未识别风险"}
                     </Badge>
                   </div>
                   <p className="mt-3 text-sm leading-6 text-slate-600">
-                    {record.isRisk
-                      ? "该记录属于二级运动员及以上等级，通常不适合参加业余赛事。"
-                      : "当前记录未显示二级及以上风险等级。"}
+                    {record.isRisk ? "该记录属于二级及以上等级。" : "当前未显示二级及以上等级。"}
                   </p>
                 </div>
                 {record.sourceUrl ? (
@@ -214,16 +204,14 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
 
   return (
     <div className="grid gap-6">
-      <Card className="metric-ink">
+      <Card className="metric-ink border-slate-200/80 shadow-panel">
         <CardHeader className="gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="default">实时公开接口优先</Badge>
             <Badge tone="muted">{sourceSummary || "等待查询"}</Badge>
           </div>
           <CardTitle>公众免费查询</CardTitle>
-          <CardDescription>
-            输入姓名即可查询该运动员的羽毛球等级记录。系统会优先请求实时公开接口，异常时会明确提示并回退到演示数据。
-          </CardDescription>
+          <CardDescription>输入姓名即可查询。实时接口优先，异常时切换本地数据源。</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -242,7 +230,7 @@ export function PublicSearchClient({ initialQuery = "" }: { initialQuery?: strin
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
-            面向赛事资格核验的公开查询入口。若姓名未命中，不代表该运动员一定没有等级记录。
+            未命中不代表没有等级记录。
           </p>
         </CardContent>
       </Card>

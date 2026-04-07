@@ -25,9 +25,9 @@ export default async function LoginPage() {
 
           <Card className="bg-slate-950 text-white shadow-panel">
             <CardHeader>
-              <CardTitle>演示账号</CardTitle>
+              <CardTitle>后台账号</CardTitle>
               <CardDescription className="text-slate-300">
-                当前版本使用固定测试账号，方便本地开发与课堂演示。
+                当前版本使用固定后台账号，可直接进入赛事核验后台。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm leading-7 text-slate-200">

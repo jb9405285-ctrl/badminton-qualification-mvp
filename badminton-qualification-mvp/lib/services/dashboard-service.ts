@@ -1,23 +1,49 @@
 import { prisma } from "@/lib/prisma";
 
 export async function getDashboardSummary() {
-  const [eventCount, batchCount, riskCount, reviewCount, latestEvent, latestBatches] =
-    await Promise.all([
-      prisma.event.count(),
-      prisma.uploadBatch.count(),
-      prisma.verificationRecord.count({ where: { status: "RISK" } }),
-      prisma.verificationRecord.count({ where: { status: "REVIEW" } }),
-      prisma.event.findFirst({
-        orderBy: { createdAt: "desc" }
-      }),
-      prisma.uploadBatch.findMany({
-        take: 5,
-        orderBy: { createdAt: "desc" },
-        include: {
-          event: true
+  const [eventCount, batchCount, latestEvent, latestBatches, eventsWithLatestBatch] = await Promise.all([
+    prisma.event.count(),
+    prisma.uploadBatch.count(),
+    prisma.event.findFirst({
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.uploadBatch.findMany({
+      take: 5,
+      orderBy: { createdAt: "desc" },
+      include: {
+        event: true
+      }
+    }),
+    prisma.event.findMany({
+      select: {
+        batches: {
+          take: 1,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true
+          }
         }
-      })
-    ]);
+      }
+    })
+  ]);
+  const latestBatchIds = eventsWithLatestBatch.flatMap((event) => event.batches.map((batch) => batch.id));
+  const [riskCount, reviewCount] =
+    latestBatchIds.length > 0
+      ? await Promise.all([
+          prisma.verificationRecord.count({
+            where: {
+              batchId: { in: latestBatchIds },
+              status: "RISK"
+            }
+          }),
+          prisma.verificationRecord.count({
+            where: {
+              batchId: { in: latestBatchIds },
+              status: "REVIEW"
+            }
+          })
+        ])
+      : [0, 0];
 
   return {
     eventCount,
@@ -33,6 +59,10 @@ export async function getEventList() {
   return prisma.event.findMany({
     orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
     include: {
+      batches: {
+        take: 1,
+        orderBy: { createdAt: "desc" }
+      },
       _count: {
         select: {
           batches: true,
@@ -61,7 +91,7 @@ export async function getEventDetail(id: string) {
         orderBy: { createdAt: "desc" }
       },
       verificationRecords: {
-        orderBy: [{ createdAt: "desc" }, { rowIndex: "asc" }]
+        orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
       }
     }
   });

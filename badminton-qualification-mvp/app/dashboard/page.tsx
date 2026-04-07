@@ -16,12 +16,12 @@ export default async function DashboardPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard hint="已创建赛事总数" label="赛事数量" value={summary.eventCount} />
         <StatCard hint="已处理上传批次数" label="上传批次" value={summary.batchCount} />
-        <StatCard hint="二级及以上风险记录" label="风险人数" value={summary.riskCount} />
-        <StatCard hint="需人工进一步确认" label="人工复核" value={summary.reviewCount} />
+        <StatCard hint="按每场赛事最新一次名单统计" label="当前风险人数" value={summary.riskCount} />
+        <StatCard hint="按每场赛事最新一次名单统计" label="当前人工复核" value={summary.reviewCount} />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <Card className="bg-white/90">
+        <Card className="dashboard-panel border-white/80">
           <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
             <div>
               <CardTitle>最近核验批次</CardTitle>
@@ -48,6 +48,7 @@ export default async function DashboardPage() {
                     <TableHead>赛事</TableHead>
                     <TableHead>状态</TableHead>
                     <TableHead>上传时间</TableHead>
+                    <TableHead>操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -59,6 +60,14 @@ export default async function DashboardPage() {
                         <StatusBadge status={batch.status} />
                       </TableCell>
                       <TableCell>{formatDateTime(batch.createdAt)}</TableCell>
+                      <TableCell>
+                        <Link
+                          className="text-primary hover:underline"
+                          href={`/dashboard/events/${batch.eventId}?batchId=${batch.id}`}
+                        >
+                          查看结果
+                        </Link>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -67,10 +76,10 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-white/90">
+        <Card className="dashboard-panel border-white/80">
           <CardHeader>
-            <CardTitle>当前演示重点</CardTitle>
-            <CardDescription>这版 MVP 已经围绕“业余赛事资格核验”做了完整主流程。</CardDescription>
+            <CardTitle>当前功能概览</CardTitle>
+            <CardDescription>当前版本已覆盖业余赛事资格核验的核心流程。</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
             <p>1. 支持公众页单人等级查询。</p>
@@ -80,7 +89,11 @@ export default async function DashboardPage() {
             {summary.latestEvent ? (
               <Link
                 className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-sm font-medium transition hover:bg-slate-50"
-                href={`/dashboard/events/${summary.latestEvent.id}`}
+                href={
+                  summary.latestBatches[0]
+                    ? `/dashboard/events/${summary.latestBatches[0].eventId}?batchId=${summary.latestBatches[0].id}`
+                    : `/dashboard/events/${summary.latestEvent.id}`
+                }
               >
                 查看最近赛事
               </Link>
