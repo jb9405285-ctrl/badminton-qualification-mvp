@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { StatCard } from "@/components/dashboard/stat-card";
-import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,94 +13,130 @@ export default async function DashboardPage() {
 
   return (
     <div className="grid gap-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard hint="已创建赛事总数" label="赛事数量" value={summary.eventCount} />
-        <StatCard hint="已处理上传批次数" label="上传批次" value={summary.batchCount} />
-        <StatCard hint="按每场赛事最新一次名单统计" label="当前风险人数" value={summary.riskCount} />
-        <StatCard hint="按每场赛事最新一次名单统计" label="当前人工复核" value={summary.reviewCount} />
-      </section>
+      <Card className="dashboard-panel border-white/80">
+        <CardHeader>
+          <CardTitle>操作教程</CardTitle>
+          <CardDescription>按这个顺序完成一次完整操作，页面会尽量保持克制，不堆多余提示。</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <ol className="space-y-3">
+            <li className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+              <p className="text-sm font-semibold text-slate-950">1. 查看教程</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">先确认默认规则、对象层级和主办方的操作顺序。</p>
+            </li>
+            <li className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+              <p className="text-sm font-semibold text-slate-950">2. 创建赛事</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">补齐赛事名称、日期、主办方名称和备注。</p>
+            </li>
+            <li className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+              <p className="text-sm font-semibold text-slate-950">3. 上传名单</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">选择赛事后上传 Excel 或 CSV 名单文件。</p>
+            </li>
+            <li className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+              <p className="text-sm font-semibold text-slate-950">4. 查看结果</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">在赛事详情中查看核验结果和风险条目。</p>
+            </li>
+            <li className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+              <p className="text-sm font-semibold text-slate-950">5. 导出 PDF</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">把核验报告导出为正式交付物。</p>
+            </li>
+          </ol>
 
-      <section className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-        <Card className="dashboard-panel border-white/80">
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div>
-              <CardTitle>最近核验批次</CardTitle>
-              <CardDescription>最新上传的报名名单批次和处理结果。</CardDescription>
+          <div className="flex flex-col justify-between gap-4">
+            <div className="rounded-3xl border border-slate-200/80 bg-white p-5">
+              <p className="text-sm font-semibold text-slate-950">下一步动作</p>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">先看教程，再进入最常用的主办方操作。</p>
+              <div className="mt-4 grid gap-3">
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/90 bg-white/88 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  href="/dashboard/settings"
+                >
+                  查看教程
+                </Link>
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                  href="/dashboard/events"
+                >
+                  创建赛事
+                </Link>
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/90 bg-white/88 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  href="/dashboard/batch-check"
+                >
+                  上传名单
+                </Link>
+                <Link
+                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/90 bg-white/88 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  href="/dashboard/history"
+                >
+                  查看批次留痕
+                </Link>
+              </div>
             </div>
-            <Link
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-              href="/dashboard/batch-check"
-            >
-              发起新核验
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {summary.latestBatches.length === 0 ? (
-              <EmptyState
-                title="还没有核验批次"
-                description="先创建赛事并上传 Excel 名单，后台就会在这里显示最近处理记录。"
-              />
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>文件</TableHead>
-                    <TableHead>赛事</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>上传时间</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {summary.latestBatches.map((batch) => (
-                    <TableRow key={batch.id}>
-                      <TableCell>{batch.originalFileName}</TableCell>
-                      <TableCell>{batch.event.name}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={batch.status} />
-                      </TableCell>
-                      <TableCell>{formatDateTime(batch.createdAt)}</TableCell>
-                      <TableCell>
-                        <Link
-                          className="text-primary hover:underline"
-                          href={`/dashboard/events/${batch.eventId}?batchId=${batch.id}`}
-                        >
-                          查看结果
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card className="dashboard-panel border-white/80">
-          <CardHeader>
-            <CardTitle>当前功能概览</CardTitle>
-            <CardDescription>当前版本已覆盖业余赛事资格核验的核心流程。</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm leading-7 text-muted-foreground">
-            <p>1. 支持公众页单人等级查询。</p>
-            <p>2. 支持赛事创建、名单上传、自动识别姓名列。</p>
-            <p>3. 二级运动员及以上统一高亮为风险名单。</p>
-            <p>4. 支持历史留痕、人工备注、CSV/PDF 导出。</p>
-            {summary.latestEvent ? (
-              <Link
-                className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-sm font-medium transition hover:bg-slate-50"
-                href={
-                  summary.latestBatches[0]
-                    ? `/dashboard/events/${summary.latestBatches[0].eventId}?batchId=${summary.latestBatches[0].id}`
-                    : `/dashboard/events/${summary.latestEvent.id}`
-                }
-              >
-                查看最近赛事
-              </Link>
-            ) : null}
-          </CardContent>
-        </Card>
-      </section>
+      <Card className="dashboard-panel border-white/80">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+          <div>
+            <CardTitle>最近批次</CardTitle>
+            <CardDescription>只保留最近处理过的名单批次，方便继续接着做。</CardDescription>
+          </div>
+          <Link
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200/90 bg-white px-4 text-sm font-medium transition hover:bg-slate-50"
+            href="/dashboard/history"
+          >
+            查看留痕
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {summary.latestBatches.length === 0 ? (
+            <EmptyState title="还没有上传批次" description="先创建赛事，再上传名单，最近批次会出现在这里。" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>上传批次</TableHead>
+                  <TableHead>赛事</TableHead>
+                  <TableHead>结果摘要</TableHead>
+                  <TableHead>上传时间</TableHead>
+                  <TableHead>查看</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {summary.latestBatches.map((batch) => (
+                  <TableRow key={batch.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-medium text-slate-950">{batch.originalFileName}</p>
+                        <p className="text-xs text-muted-foreground">共 {batch.totalRows} 行</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-medium text-slate-950">{batch.event.name}</p>
+                        <p className="text-xs text-muted-foreground">{batch.event.organizerName}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-slate-700">
+                        已处理 {batch.processedRows}/{batch.totalRows}，风险 {batch.riskRows}，待复核 {batch.unresolvedRows}
+                      </p>
+                    </TableCell>
+                    <TableCell>{formatDateTime(batch.createdAt)}</TableCell>
+                    <TableCell>
+                      <Link className="text-primary hover:underline" href={`/dashboard/events/${batch.eventId}?batchId=${batch.id}`}>
+                        查看详情
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

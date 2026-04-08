@@ -1,49 +1,87 @@
+import Link from "next/link";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DEMO_ACCOUNT_EMAIL } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const athleteCount = await prisma.athlete.count();
-
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-[1.04fr_0.96fr]">
       <Card className="dashboard-panel border-white/80">
         <CardHeader className="pb-4">
-          <CardTitle>当前规则说明</CardTitle>
-          <CardDescription>当前版本使用固定风险规则。</CardDescription>
+          <CardTitle>教程</CardTitle>
+          <CardDescription>主办方先按这 5 步走，能快速完成一次完整核验。</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
-          <div className="dashboard-inset p-4">
-            <p>1. 二级运动员及以上统一视为风险。</p>
+        <CardContent className="space-y-3">
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+            <p className="text-sm font-semibold text-slate-950">1. 查看教程</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">先看默认规则和对象层级，减少后续误操作。</p>
           </div>
-          <div className="dashboard-inset p-4">
-            <p>2. 风险范围包括：二级运动员、一级运动员、运动健将、国际级运动健将。</p>
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+            <p className="text-sm font-semibold text-slate-950">2. 创建赛事</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">把赛事名称、日期、主办方名称和备注补齐。</p>
           </div>
-          <div className="dashboard-inset p-4">
-            <p>3. 未查到记录不等于绝对安全，建议仍保留人工复核流程。</p>
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+            <p className="text-sm font-semibold text-slate-950">3. 上传名单</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">选择赛事后上传 Excel 或 CSV 文件。</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+            <p className="text-sm font-semibold text-slate-950">4. 查看结果</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">在赛事详情里看核验结果、风险条目和复核结果。</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4">
+            <p className="text-sm font-semibold text-slate-950">5. 导出 PDF</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">把最终核验报告导出为交付物。</p>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="dashboard-panel border-white/80">
-        <CardHeader className="pb-4">
-          <CardTitle>数据与账号</CardTitle>
-          <CardDescription>当前环境的账号与数据策略。</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
-          <div className="dashboard-inset p-4">
-            <p>后台账号：{DEMO_ACCOUNT_EMAIL}</p>
-          </div>
-          <div className="dashboard-inset p-4">
-            <p>本地记录库：{athleteCount} 条羽毛球数据</p>
-          </div>
-          <div className="dashboard-inset p-4">
-            <p>数据源策略：公开接口优先，异常时切换本地数据源。</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6">
+        <Card className="dashboard-panel border-white/80">
+          <CardHeader className="pb-4">
+            <CardTitle>规则</CardTitle>
+            <CardDescription>这里只保留默认规则，不放假配置。</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm leading-7 text-muted-foreground">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4">
+              <p>1. 二级及以上统一视为风险。</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4">
+              <p>2. 未查到不等于通过，仍需人工复核。</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4">
+              <p>3. 删除后的记录会继续保留在批次留痕里，便于回看审计痕迹。</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="dashboard-panel border-white/80">
+          <CardHeader className="pb-4">
+            <CardTitle>快捷操作</CardTitle>
+            <CardDescription>直接进入最常用的主办方动作。</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <Link
+              className="inline-flex h-11 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+              href="/dashboard/events"
+            >
+              创建或编辑赛事
+            </Link>
+            <Link
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/90 bg-white/88 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              href="/dashboard/batch-check"
+            >
+              上传名单并查看结果
+            </Link>
+            <Link
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/90 bg-white/88 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              href="/dashboard/history"
+            >
+              查看批次留痕
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

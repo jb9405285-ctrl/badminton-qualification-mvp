@@ -6,11 +6,21 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 const eventSchema = z.object({
-  name: z.string().min(2, "请填写赛事名称。"),
-  organizerName: z.string().min(2, "请填写主办方名称。"),
+  name: z.string().trim().min(2, "请填写赛事名称。"),
+  organizerName: z.string().trim().min(2, "请填写主办方名称。"),
   eventDate: z.string().min(1, "请选择比赛日期。"),
-  notes: z.string().optional()
+  notes: z.string().trim().optional()
 });
+
+function parseEventDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date;
+}
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -38,12 +48,24 @@ export async function POST(request: Request) {
     );
   }
 
+  const eventDate = parseEventDate(parsed.data.eventDate);
+
+  if (!eventDate) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "比赛日期格式无效。"
+      },
+      { status: 400 }
+    );
+  }
+
   const event = await prisma.event.create({
     data: {
       name: parsed.data.name,
       organizerName: parsed.data.organizerName,
-      eventDate: new Date(parsed.data.eventDate),
-      notes: parsed.data.notes,
+      eventDate,
+      notes: parsed.data.notes || null,
       status: "ACTIVE",
       createdById: user.id
     }
@@ -51,6 +73,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    eventId: event.id
+    eventId: event.id,
+    message: "赛事已创建，可以开始上传名单。"
   });
 }

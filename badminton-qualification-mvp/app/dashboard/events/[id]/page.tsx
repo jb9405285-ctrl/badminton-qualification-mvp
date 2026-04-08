@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { EditEventForm } from "@/components/dashboard/edit-event-form";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { VerificationResultsTable } from "@/components/dashboard/verification-results-table";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +62,12 @@ export default async function EventDetailPage({
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-sm font-medium transition hover:bg-slate-50"
+              href="/dashboard/events"
+            >
+              返回赛事管理
+            </Link>
+            <Link
               className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
               href={`/dashboard/batch-check?eventId=${event.id}`}
             >
@@ -105,6 +112,29 @@ export default async function EventDetailPage({
               <p className="mt-2 text-3xl font-semibold text-warning">{unresolvedCount}</p>
             </CardContent>
           </Card>
+        </CardContent>
+      </Card>
+
+      <Card className="dashboard-panel border-white/80">
+        <CardHeader className="pb-4">
+          <CardTitle>赛事信息管理</CardTitle>
+          <CardDescription>
+            这里修改的是赛事主数据。更新后，批次留痕、核验结果页头和 CSV / PDF 导出标题会统一使用最新赛事信息。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EditEventForm
+            event={{
+              id: event.id,
+              name: event.name,
+              organizerName: event.organizerName,
+              eventDate: event.eventDate.toISOString(),
+              notes: event.notes ?? "",
+              updatedAt: event.updatedAt.toISOString()
+            }}
+            initiallyOpen
+            triggerLabel="编辑赛事"
+          />
         </CardContent>
       </Card>
 

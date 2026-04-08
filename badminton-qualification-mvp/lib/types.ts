@@ -20,6 +20,10 @@ export type EventStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
 export type UploadStatus = "PENDING" | "NEEDS_MAPPING" | "PROCESSED" | "FAILED";
 export type VerificationStatus = "PASSED" | "RISK" | "NOT_FOUND" | "REVIEW";
 export type RiskCategory = "CLEAR" | "HIGH" | "UNKNOWN" | "REVIEW";
+export type HistoryAction = "delete" | "archive";
+export type BatchAuditAction = "DELETE" | "ARCHIVE" | "DELETE_BLOCKED";
+export type HistoryRiskFilter = "all" | "risk" | "review" | "clear";
+export type HistoryView = "active" | "archived" | "deleted" | "all";
 
 export type AthleteSearchSourceMode = "public_realtime" | "mock_demo";
 
@@ -58,4 +62,48 @@ export type UploadParseResult = {
   previewRows: ParsedRosterRow[];
   detectedNameColumn: string | null;
   fileType: string;
+};
+
+export type HistoryBatchListItem = {
+  id: string;
+  eventId: string;
+  originalFileName: string;
+  fileType: string;
+  status: string;
+  totalRows: number;
+  processedRows: number;
+  matchedRows: number;
+  riskRows: number;
+  unresolvedRows: number;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted: boolean;
+  deletedAt: string | null;
+  archivedAt: string | null;
+  uploadedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  event: {
+    id: string;
+    name: string;
+    organizerName: string;
+  };
+};
+
+export type EventFormValues = {
+  name: string;
+  organizerName: string;
+  eventDate: string;
+  notes: string;
+};
+
+export type EventEditableSummary = {
+  id: string;
+  name: string;
+  organizerName: string;
+  eventDate: string;
+  notes: string;
+  updatedAt?: string;
 };

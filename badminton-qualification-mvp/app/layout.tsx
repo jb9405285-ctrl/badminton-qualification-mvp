@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 
 import type { Metadata } from "next";
 
-import "@/app/globals.css";
+import "./globals.css";
 
+import { ToastProvider } from "@/components/ui/toast";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default async function RootLayout({
 }>) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

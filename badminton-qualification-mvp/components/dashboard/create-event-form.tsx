@@ -8,10 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
+import type { EventFormValues } from "@/lib/types";
 
 export function CreateEventForm() {
   const router = useRouter();
-  const [form, setForm] = useState({
+  const { toast } = useToast();
+  const [form, setForm] = useState<EventFormValues>({
     name: "",
     organizerName: "",
     eventDate: "",
@@ -39,15 +42,27 @@ export function CreateEventForm() {
         throw new Error(payload.message || "创建赛事失败。");
       }
 
+      toast({
+        title: "赛事已创建",
+        description: payload.message || "现在可以继续上传名单并查看核验结果。",
+        tone: "success"
+      });
       setForm({
         name: "",
         organizerName: "",
         eventDate: "",
         notes: ""
       });
+      router.push(`/dashboard/events/${payload.eventId}`);
       router.refresh();
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "创建赛事失败。");
+      const message = submitError instanceof Error ? submitError.message : "创建赛事失败。";
+      setError(message);
+      toast({
+        title: "创建失败",
+        description: message,
+        tone: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -57,7 +72,7 @@ export function CreateEventForm() {
     <Card className="dashboard-panel border-white/80">
       <CardHeader className="pb-4">
         <CardTitle>创建赛事</CardTitle>
-        <CardDescription>创建一个赛事后，即可上传报名名单并执行批量资格核验。</CardDescription>
+        <CardDescription>先创建赛事，再把上传批次、核验结果和导出报告都挂到同一个赛事对象下。</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>

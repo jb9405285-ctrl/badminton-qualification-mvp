@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 const items = [
   { href: "/dashboard", label: "概览" },
   { href: "/dashboard/events", label: "赛事" },
-  { href: "/dashboard/batch-check", label: "核验" },
-  { href: "/dashboard/history", label: "历史" },
-  { href: "/dashboard/settings", label: "设置" }
+  { href: "/dashboard/batch-check", label: "名单" },
+  { href: "/dashboard/history", label: "批次" },
+  { href: "/dashboard/settings", label: "教程" }
 ];
 
 export function DashboardMobileNav() {

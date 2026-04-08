@@ -224,62 +224,49 @@ storage/
 - 实际使用前需核验数据合法性与准确性
 - 这版优先保证 MVP 可运行与可演示，后续适合继续接真实数据源、权限、支付和部署能力
 
-## 11. 免费线上部署方案
+## 11. Render 重新部署方案
 
-当前推荐的免费试运行方案：
+如果你昨天已经在 Render 上建好 Web Service，这一版不需要新开一套服务，直接把现有服务切到最新代码并更新构建命令即可。
 
-- Render Free：运行 Next.js 网站
-- Supabase Free：保存 PostgreSQL 数据库
-- Render Free 没有持久磁盘，所以线上建议设置 `PERSIST_UPLOAD_FILES=false`
-- 名单解析后的行数据、核验结果、风险名单和导出报告所需数据会保存到数据库
-- 原始上传文件本身不作为线上免费环境的可靠持久存储
+线上仍建议：
 
-### 11.1 创建 Supabase 免费数据库
+- 使用 PostgreSQL 作为 `DATABASE_URL`
+- 设置 `PERSIST_UPLOAD_FILES=false`
+- 让 Render 负责跑构建和启动，避免本地打包产物混入线上
 
-1. 打开 Supabase 并创建免费 PostgreSQL 项目。
-2. 如果直连 `db.<project-ref>.supabase.co:5432` 不通，优先使用 Supabase Connection Pooler。
-3. 当前项目已验证可用的 pooler host 是：
+### 11.1 现有 Render 服务需要替换的命令
+
+把现有 Render Web Service 的命令改成：
 
 ```text
-aws-1-us-east-2.pooler.supabase.com
-```
+Build Command:
+npm ci --include=dev && npm run render:build
 
-4. Render 环境变量中的连接串格式类似：
+Pre-Deploy Command:
+npm run render:predeploy
 
-```text
-postgresql://postgres.<project-ref>:PASSWORD@aws-1-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require
-```
-
-### 11.2 创建 Render Free Web Service
-
-1. 把本项目推送到 GitHub。
-2. 在 Render 新建 `Web Service`，选择该 GitHub 仓库。
-3. 如果 GitHub 仓库根目录是 `/Users/xxiyy/Documents/badminton`，Root Directory 填：
-
-```text
-badminton-qualification-mvp
-```
-
-4. Runtime 选择 Node。
-5. Build Command 填：
-
-```bash
-npm install --include=dev && npm run deploy:build
-```
-
-6. Start Command 填：
-
-```bash
+Start Command:
 npm run start
 ```
 
-7. Environment Variables 填：
+其中：
+
+- `render:build` 会先生成 PostgreSQL 版 Prisma Client，再执行 `next build`
+- `render:predeploy` 会把 schema 推到线上数据库，并补齐演示账号和演示数据
+
+### 11.2 现有 Render 服务需要确认的环境变量
+
+至少保留：
 
 ```text
-DATABASE_URL=Supabase Pooler PostgreSQL 连接串
+DATABASE_URL=你当前线上 PostgreSQL 连接串
 PERSIST_UPLOAD_FILES=false
 NODE_ENV=production
 ```
+
+如果你昨天用的是 Supabase PostgreSQL，可以继续沿用，不需要因为这次升级强制换库。
+
+### 11.3 重新部署前的仓库检查
 
 推送到 GitHub 前，请确认不要提交本地真实数据文件：
 
@@ -291,7 +278,7 @@ git rm --cached badminton-qualification-mvp/.DS_Store .DS_Store
 
 以上命令只会从 Git 跟踪中移除文件，不会删除你电脑上的本地文件。
 
-### 11.3 上线后检查
+### 11.4 重部署后的检查顺序
 
 Render 部署完成后先访问：
 
@@ -299,9 +286,11 @@ Render 部署完成后先访问：
 https://你的-render域名/api/health
 ```
 
-看到 `{"ok":true,"database":"ok"}` 后，再访问：
+看到 `{"ok":true,"database":"ok"}` 后，再检查：
 
 ```text
+https://你的-render域名/
+https://你的-render域名/search
 https://你的-render域名/login
 ```
 
@@ -312,9 +301,17 @@ admin@example.com
 password123
 ```
 
-### 11.4 免费方案限制
+### 11.5 免费方案限制
 
-- Render Free 一段时间无人访问后会休眠，客户第一次打开可能需要等待。
-- Supabase Free 数据库也可能有冷启动，但数据会比 Render 本地文件更可靠。
-- 不要把本地 `prisma/dev.db` 当作线上数据库上传到公开仓库。
-- 如果客户开始真实长期使用，建议升级到付费实例并增加备份策略。
+- Render Free 一段时间无人访问后会休眠，第一次打开可能需要等待。
+- 如果你当前数据库也是免费实例，首次访问时可能有冷启动。
+- Render 免费环境不适合依赖本地持久磁盘，所以原始上传文件不应作为长期存储。
+- 如果朋友开始持续使用，建议升级实例并增加数据库备份。
+
+## 12. 联调与验收
+
+当前阶段的统一联调、测试步骤和验收清单已整理到：
+
+[docs/acceptance-checklist.md](/Users/xxiyy/Documents/badminton/badminton-qualification-mvp/docs/acceptance-checklist.md)
+
+这份文档会在 A/B/C 子代理完成后作为最终验收口径。

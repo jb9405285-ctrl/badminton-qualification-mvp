@@ -8,8 +8,11 @@
   "scripts": {
     "dev": "next dev",
     "dev:local": "next dev --hostname 127.0.0.1 --port 3001",
+    "dev:reset": "bash scripts/dev-reset.sh",
     "build": "next build",
     "deploy:build": "prisma db push --schema prisma/schema.postgres.prisma && prisma generate --schema prisma/schema.postgres.prisma && next build",
+    "render:build": "prisma generate --schema prisma/schema.postgres.prisma && next build",
+    "render:predeploy": "prisma db push --schema prisma/schema.postgres.prisma && prisma db seed",
     "start": "next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint": "next lint",
     "prisma:generate": "prisma generate",

@@ -12,19 +12,21 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  const user = await requireUser();
+  await requireUser();
 
   return (
     <div className="dashboard-stage flex min-h-screen">
       <DashboardSidebar />
       <main className="flex-1">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-5 py-6 md:px-8">
-          <header className="dashboard-panel flex flex-col gap-5 rounded-[30px] border border-white/80 p-5 md:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <header className="dashboard-panel flex flex-col gap-4 rounded-[30px] border border-white/80 p-5 md:p-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">Organizer Workspace</p>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">{user.name}</h1>
-                <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">主办方工作台</p>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">先看教程，再开始操作</h1>
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  按“查看教程、创建赛事、上传名单、查看结果、导出 PDF”的顺序完成一次完整流程。
+                </p>
               </div>
               <LogoutButton />
             </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CreateEventForm } from "@/components/dashboard/create-event-form";
+import { EditEventForm } from "@/components/dashboard/edit-event-form";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,14 +48,30 @@ export default async function EventsPage() {
                       <p className="mt-3 text-sm text-muted-foreground">
                         当前结果来自：{latestBatch.originalFileName} · {formatDateTime(latestBatch.createdAt)}
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        当前还没有上传批次，先完善赛事信息后再进入名单上传。
+                      </p>
+                    )}
                   </div>
-                  <Link
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-sm font-medium transition hover:bg-slate-50"
-                    href={detailHref}
-                  >
-                    {latestBatch ? "查看本次结果" : "上传名单"}
-                  </Link>
+                  <div className="flex flex-wrap gap-3">
+                    <EditEventForm
+                      event={{
+                        id: event.id,
+                        name: event.name,
+                        organizerName: event.organizerName,
+                        eventDate: event.eventDate.toISOString(),
+                        notes: event.notes ?? "",
+                        updatedAt: event.updatedAt.toISOString()
+                      }}
+                    />
+                    <Link
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-sm font-medium transition hover:bg-slate-50"
+                      href={detailHref}
+                    >
+                      {latestBatch ? "查看赛事结果" : "上传名单"}
+                    </Link>
+                  </div>
                 </CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-4">
                   <div className="dashboard-inset p-4 text-sm text-muted-foreground">

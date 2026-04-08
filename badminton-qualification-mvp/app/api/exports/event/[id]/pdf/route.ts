@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { createEventPdfReport } from "@/lib/export/report";
-import { getEventDetail } from "@/lib/services/dashboard-service";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -14,6 +14,49 @@ async function streamToBuffer(stream: NodeJS.ReadableStream) {
   }
 
   return Buffer.concat(chunks);
+}
+
+async function findSelectedBatch(eventId: string, batchId: string | null) {
+  if (batchId) {
+    return prisma.uploadBatch.findFirst({
+      where: {
+        id: batchId,
+        eventId
+      },
+      include: {
+        verificationRecords: {
+          orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
+        }
+      }
+    });
+  }
+
+  return (
+    (await prisma.uploadBatch.findFirst({
+      where: {
+        eventId,
+        status: "PROCESSED"
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: {
+        verificationRecords: {
+          orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
+        }
+      }
+    })) ??
+    (await prisma.uploadBatch.findFirst({
+      where: {
+        eventId,
+        isDeleted: false
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: {
+        verificationRecords: {
+          orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
+        }
+      }
+    }))
+  );
 }
 
 export async function GET(
@@ -38,7 +81,16 @@ export async function GET(
     );
   }
 
-  const event = await getEventDetail(params.id);
+  const event = await prisma.event.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true,
+      name: true,
+      organizerName: true,
+      eventDate: true,
+      notes: true
+    }
+  });
 
   if (!event) {
     return NextResponse.json(
@@ -52,10 +104,8 @@ export async function GET(
 
   const url = new URL(request.url);
   const batchId = url.searchParams.get("batchId");
-  const selectedBatch = batchId ? event.batches.find((batch) => batch.id === batchId) : event.batches[0] ?? null;
-  const records = selectedBatch
-    ? event.verificationRecords.filter((record) => record.batchId === selectedBatch.id)
-    : [];
+  const selectedBatch = await findSelectedBatch(params.id, batchId);
+  const records = selectedBatch?.verificationRecords ?? [];
 
   if (batchId && !selectedBatch) {
     return NextResponse.json(
@@ -77,52 +127,62 @@ export async function GET(
     );
   }
 
-  const summary = {
-    total: records.length,
-    passed: records.filter((item) => item.status === "PASSED").length,
-    risk: records.filter((item) => item.status === "RISK").length,
-    notFound: records.filter((item) => item.status === "NOT_FOUND").length,
-    review: records.filter((item) => item.status === "REVIEW").length
-  };
+  try {
+    const summary = {
+      total: records.length,
+      passed: records.filter((item) => item.status === "PASSED").length,
+      risk: records.filter((item) => item.status === "RISK").length,
+      notFound: records.filter((item) => item.status === "NOT_FOUND").length,
+      review: records.filter((item) => item.status === "REVIEW").length
+    };
 
-  const stream = await createEventPdfReport({
-    eventName: event.name,
-    organizerName: event.organizerName,
-    eventDate: event.eventDate,
-    eventNotes: event.notes,
-    batch: {
-      id: selectedBatch.id,
-      fileName: selectedBatch.originalFileName,
-      uploadedAt: selectedBatch.createdAt,
-      totalRows: selectedBatch.totalRows,
-      processedRows: selectedBatch.processedRows,
-      riskRows: selectedBatch.riskRows,
-      unresolvedRows: selectedBatch.unresolvedRows
-    },
-    exportedAt: new Date(),
-    summary,
-    records: records.map((record) => ({
-      rowIndex: record.rowIndex,
-      athleteNameInput: record.athleteNameInput,
-      matchedAthleteName: record.matchedAthleteName,
-      matchedLevel: record.matchedLevel,
-      matchedGender: record.matchedGender,
-      matchedRegion: record.matchedRegion,
-      status: record.status,
-      remark: record.remark,
-      matchedOrganization: record.matchedOrganization,
-      matchedSourceName: record.matchedSourceName,
-      isRisk: record.isRisk,
-      queryTime: record.queryTime
-    }))
-  });
+    const stream = await createEventPdfReport({
+      eventName: event.name,
+      organizerName: event.organizerName,
+      eventDate: event.eventDate,
+      eventNotes: event.notes,
+      batch: {
+        id: selectedBatch.id,
+        fileName: selectedBatch.originalFileName,
+        uploadedAt: selectedBatch.createdAt,
+        totalRows: selectedBatch.totalRows,
+        processedRows: selectedBatch.processedRows,
+        riskRows: selectedBatch.riskRows,
+        unresolvedRows: selectedBatch.unresolvedRows
+      },
+      exportedAt: new Date(),
+      summary,
+      records: records.map((record) => ({
+        rowIndex: record.rowIndex,
+        athleteNameInput: record.athleteNameInput,
+        matchedAthleteName: record.matchedAthleteName,
+        matchedLevel: record.matchedLevel,
+        matchedGender: record.matchedGender,
+        matchedRegion: record.matchedRegion,
+        status: record.status,
+        remark: record.remark,
+        matchedOrganization: record.matchedOrganization,
+        matchedSourceName: record.matchedSourceName,
+        isRisk: record.isRisk,
+        queryTime: record.queryTime
+      }))
+    });
 
-  const buffer = await streamToBuffer(stream);
+    const buffer = await streamToBuffer(stream);
 
-  return new NextResponse(buffer, {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="event-${event.id}-batch-${selectedBatch.id}-verification-report.pdf"`
-    }
-  });
+    return new NextResponse(buffer, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="event-${event.id}-batch-${selectedBatch.id}-verification-report.pdf"`
+      }
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: error instanceof Error ? error.message : "PDF 导出失败。"
+      },
+      { status: 500 }
+    );
+  }
 }

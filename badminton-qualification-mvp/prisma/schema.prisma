@@ -19,6 +19,9 @@ model User {
   events       Event[]
   sessions     Session[]
   uploadBatches UploadBatch[]
+  deletedUploadBatches UploadBatch[] @relation("UploadBatchDeletedBy")
+  archivedUploadBatches UploadBatch[] @relation("UploadBatchArchivedBy")
+  batchAuditLogs BatchAuditLog[] @relation("BatchAuditLogActor")
 }
 
 model Session {
@@ -82,6 +85,11 @@ model UploadBatch {
   fileType           String
   status             String               @default("PENDING")
   detectedNameColumn String?
+  isDeleted          Boolean              @default(false)
+  deletedAt          DateTime?
+  deletedById        String?
+  archivedAt         DateTime?
+  archivedById       String?
   totalRows          Int                  @default(0)
   processedRows      Int                  @default(0)
   matchedRows        Int                  @default(0)
@@ -96,9 +104,15 @@ model UploadBatch {
   updatedAt          DateTime             @updatedAt
   event              Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
   uploadedBy         User                 @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  deletedBy          User?                @relation("UploadBatchDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  archivedBy         User?                @relation("UploadBatchArchivedBy", fields: [archivedById], references: [id], onDelete: SetNull)
   verificationRecords VerificationRecord[]
+  auditLogs          BatchAuditLog[]
 
   @@index([eventId, createdAt])
+  @@index([isDeleted, createdAt])
+  @@index([archivedAt])
+  @@index([deletedAt])
 }
 
 model VerificationRecord {
@@ -130,4 +144,19 @@ model VerificationRecord {
   @@index([batchId])
   @@index([status])
   @@index([athleteNameInput])
+}
+
+model BatchAuditLog {
+  id        String   @id @default(cuid())
+  batchId   String
+  actorId   String?
+  action    String
+  detailJson String?
+  createdAt DateTime @default(now())
+  batch     UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  actor     User?       @relation("BatchAuditLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([batchId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
 }

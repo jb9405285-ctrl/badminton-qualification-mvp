@@ -3,7 +3,50 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createVerificationCsv } from "@/lib/export/report";
 import { formatDateTime, formatStatusLabel } from "@/lib/format";
-import { getEventDetail } from "@/lib/services/dashboard-service";
+import { prisma } from "@/lib/prisma";
+
+async function findSelectedBatch(eventId: string, batchId: string | null) {
+  if (batchId) {
+    return prisma.uploadBatch.findFirst({
+      where: {
+        id: batchId,
+        eventId
+      },
+      include: {
+        verificationRecords: {
+          orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
+        }
+      }
+    });
+  }
+
+  return (
+    (await prisma.uploadBatch.findFirst({
+      where: {
+        eventId,
+        status: "PROCESSED"
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: {
+        verificationRecords: {
+          orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
+        }
+      }
+    })) ??
+    (await prisma.uploadBatch.findFirst({
+      where: {
+        eventId,
+        isDeleted: false
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: {
+        verificationRecords: {
+          orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
+        }
+      }
+    }))
+  );
+}
 
 export async function GET(
   request: Request,
@@ -27,7 +70,13 @@ export async function GET(
     );
   }
 
-  const event = await getEventDetail(params.id);
+  const event = await prisma.event.findUnique({
+    where: { id: params.id },
+    select: {
+      id: true,
+      name: true
+    }
+  });
 
   if (!event) {
     return NextResponse.json(
@@ -41,10 +90,8 @@ export async function GET(
 
   const url = new URL(request.url);
   const batchId = url.searchParams.get("batchId");
-  const selectedBatch = batchId ? event.batches.find((batch) => batch.id === batchId) : event.batches[0] ?? null;
-  const records = selectedBatch
-    ? event.verificationRecords.filter((record) => record.batchId === selectedBatch.id)
-    : [];
+  const selectedBatch = await findSelectedBatch(params.id, batchId);
+  const records = selectedBatch?.verificationRecords ?? [];
 
   if (batchId && !selectedBatch) {
     return NextResponse.json(
