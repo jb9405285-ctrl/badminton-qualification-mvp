@@ -3,13 +3,15 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { requireUser } from "@/lib/auth/session";
 import { formatDateTime } from "@/lib/format";
 import { getDashboardSummary } from "@/lib/services/dashboard-service";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const summary = await getDashboardSummary();
+  const user = await requireUser();
+  const summary = await getDashboardSummary(user);
 
   return (
     <div className="grid gap-6">

@@ -45,6 +45,10 @@ export async function processBatchVerification({ batchId, eventId, nameColumn }:
     throw new Error("上传批次不存在。");
   }
 
+  if (batch.eventId !== eventId) {
+    throw new Error("批次与赛事不匹配。");
+  }
+
   if (!batch.rawRowsJson) {
     throw new Error("当前批次缺少原始名单数据，无法继续核验。");
   }

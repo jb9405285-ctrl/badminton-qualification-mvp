@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { isSuperAdmin } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -60,8 +61,29 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!user.organizationId && !isSuperAdmin(user)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "当前账号尚未绑定主办方机构，不能创建赛事。"
+      },
+      { status: 403 }
+    );
+  }
+
+  if (!user.organizationId) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "平台管理员账号不直接归属某个主办方，请先审批主办方申请后再使用正式工作流。"
+      },
+      { status: 400 }
+    );
+  }
+
   const event = await prisma.event.create({
     data: {
+      organizationId: user.organizationId,
       name: parsed.data.name,
       organizerName: parsed.data.organizerName,
       eventDate,

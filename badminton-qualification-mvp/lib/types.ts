@@ -15,7 +15,7 @@ export type AthleteSeedRecord = {
   providerKey?: string;
 };
 
-export type UserRole = "ADMIN";
+export type UserRole = "SUPER_ADMIN" | "ORGANIZER";
 export type EventStatus = "DRAFT" | "ACTIVE" | "ARCHIVED";
 export type UploadStatus = "PENDING" | "NEEDS_MAPPING" | "PROCESSED" | "FAILED";
 export type VerificationStatus = "PASSED" | "RISK" | "NOT_FOUND" | "REVIEW";
@@ -24,6 +24,8 @@ export type HistoryAction = "delete" | "archive";
 export type BatchAuditAction = "DELETE" | "ARCHIVE" | "DELETE_BLOCKED";
 export type HistoryRiskFilter = "all" | "risk" | "review" | "clear";
 export type HistoryView = "active" | "archived" | "deleted" | "all";
+export type OrganizerApplicationStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type AccountAccessStatus = "ACTIVE" | "SUSPENDED";
 
 export type AthleteSearchSourceMode = "public_realtime" | "mock_demo";
 
@@ -106,4 +108,21 @@ export type EventEditableSummary = {
   eventDate: string;
   notes: string;
   updatedAt?: string;
+};
+
+export type OrganizerApplicationListItem = {
+  id: string;
+  organizationName: string;
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string | null;
+  note: string | null;
+  status: OrganizerApplicationStatus;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+  setupPath: string | null;
+  setupTokenExpiresAt: string | null;
+  accountReady: boolean;
+  accountStatus: AccountAccessStatus | null;
 };

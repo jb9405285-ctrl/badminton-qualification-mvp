@@ -1,7 +1,8 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, User } from "@prisma/client";
 
-import type { HistoryRiskFilter } from "@/lib/types";
+import { buildBatchWhereForUser, buildEventWhereForUser, buildVerificationWhereForUser } from "@/lib/auth/access";
 import { prisma } from "@/lib/prisma";
+import type { HistoryRiskFilter } from "@/lib/types";
 
 export type HistoryListFilters = {
   query?: string;
@@ -110,23 +111,26 @@ export function buildHistoryBatchWhere(filters: HistoryListFilters = {}): Prisma
   return where;
 }
 
-async function countActiveBatchesForEvent(eventId: string) {
-  const [batchCount, verificationRecordCount] = await Promise.all([
-    prisma.uploadBatch.count({
-      where: {
-        eventId,
+async function countActiveBatchesForEvent(user: Pick<User, "role" | "organizationId">, eventId: string) {
+  const batchWhere = buildBatchWhereForUser(user, {
+    eventId,
+    isDeleted: false
+  });
+  const verificationWhere = buildVerificationWhereForUser(user, {
+    eventId,
+    batch: {
+      is: {
         isDeleted: false
       }
+    }
+  });
+
+  const [batchCount, verificationRecordCount] = await Promise.all([
+    prisma.uploadBatch.count({
+      where: batchWhere
     }),
     prisma.verificationRecord.count({
-      where: {
-        eventId,
-        batch: {
-          is: {
-            isDeleted: false
-          }
-        }
-      }
+      where: verificationWhere
     })
   ]);
 
@@ -136,17 +140,21 @@ async function countActiveBatchesForEvent(eventId: string) {
   };
 }
 
-export async function getDashboardSummary() {
+export async function getDashboardSummary(user: Pick<User, "role" | "organizationId">) {
+  const eventWhere = buildEventWhereForUser(user);
+  const batchWhere = buildBatchWhereForUser(user, activeUploadBatchWhere);
+
   const [eventCount, batchCount, latestEvent, latestBatches, eventsWithLatestBatch] = await Promise.all([
-    prisma.event.count(),
+    prisma.event.count({ where: eventWhere }),
     prisma.uploadBatch.count({
-      where: activeUploadBatchWhere
+      where: batchWhere
     }),
     prisma.event.findFirst({
+      where: eventWhere,
       orderBy: { createdAt: "desc" }
     }),
     prisma.uploadBatch.findMany({
-      where: activeUploadBatchWhere,
+      where: batchWhere,
       take: 5,
       orderBy: { createdAt: "desc" },
       include: {
@@ -154,6 +162,7 @@ export async function getDashboardSummary() {
       }
     }),
     prisma.event.findMany({
+      where: eventWhere,
       select: {
         batches: {
           where: activeUploadBatchWhere,
@@ -166,21 +175,22 @@ export async function getDashboardSummary() {
       }
     })
   ]);
+
   const latestBatchIds = eventsWithLatestBatch.flatMap((event) => event.batches.map((batch) => batch.id));
   const [riskCount, reviewCount] =
     latestBatchIds.length > 0
       ? await Promise.all([
           prisma.verificationRecord.count({
-            where: {
+            where: buildVerificationWhereForUser(user, {
               batchId: { in: latestBatchIds },
               status: "RISK"
-            }
+            })
           }),
           prisma.verificationRecord.count({
-            where: {
+            where: buildVerificationWhereForUser(user, {
               batchId: { in: latestBatchIds },
               status: "REVIEW"
-            }
+            })
           })
         ])
       : [0, 0];
@@ -195,8 +205,9 @@ export async function getDashboardSummary() {
   };
 }
 
-export async function getEventList() {
+export async function getEventList(user: Pick<User, "role" | "organizationId">) {
   const events = await prisma.event.findMany({
+    where: buildEventWhereForUser(user),
     orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
     include: {
       batches: {
@@ -209,7 +220,7 @@ export async function getEventList() {
 
   return Promise.all(
     events.map(async (event) => {
-      const counts = await countActiveBatchesForEvent(event.id);
+      const counts = await countActiveBatchesForEvent(user, event.id);
 
       return {
         ...event,
@@ -219,9 +230,12 @@ export async function getEventList() {
   );
 }
 
-export async function getHistoryList(filters: HistoryListFilters = {}) {
+export async function getHistoryList(
+  user: Pick<User, "role" | "organizationId">,
+  filters: HistoryListFilters = {}
+) {
   return prisma.uploadBatch.findMany({
-    where: buildHistoryBatchWhere(filters),
+    where: buildBatchWhereForUser(user, buildHistoryBatchWhere(filters)),
     orderBy: { createdAt: "desc" },
     include: {
       event: true,
@@ -232,9 +246,9 @@ export async function getHistoryList(filters: HistoryListFilters = {}) {
   });
 }
 
-export async function getEventDetail(id: string) {
-  return prisma.event.findUnique({
-    where: { id },
+export async function getEventDetail(user: Pick<User, "role" | "organizationId">, id: string) {
+  return prisma.event.findFirst({
+    where: buildEventWhereForUser(user, { id }),
     include: {
       createdBy: true,
       batches: {
@@ -242,11 +256,11 @@ export async function getEventDetail(id: string) {
         orderBy: { createdAt: "desc" }
       },
       verificationRecords: {
-        where: {
+        where: buildVerificationWhereForUser(user, {
           batch: {
             is: activeUploadBatchWhere
           }
-        },
+        }),
         orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
       }
     }

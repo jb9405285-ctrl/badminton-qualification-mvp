@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { buildEventWhereForUser } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -63,10 +64,10 @@ export async function PATCH(
     );
   }
 
-  const existingEvent = await prisma.event.findUnique({
-    where: {
+  const existingEvent = await prisma.event.findFirst({
+    where: buildEventWhereForUser(user, {
       id: params.id
-    },
+    }),
     select: {
       id: true
     }

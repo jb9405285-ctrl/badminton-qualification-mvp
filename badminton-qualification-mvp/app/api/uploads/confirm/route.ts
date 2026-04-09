@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { buildBatchWhereForUser } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 import { processBatchVerification } from "@/lib/services/batch-service";
 
 const confirmSchema = z.object({
@@ -38,6 +40,26 @@ export async function POST(request: Request) {
   }
 
   try {
+    const batch = await prisma.uploadBatch.findFirst({
+      where: buildBatchWhereForUser(user, {
+        id: parsed.data.batchId,
+        eventId: parsed.data.eventId
+      }),
+      select: {
+        id: true
+      }
+    });
+
+    if (!batch) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "批次不存在，或当前账号无权操作该批次。"
+        },
+        { status: 404 }
+      );
+    }
+
     const result = await processBatchVerification({
       batchId: parsed.data.batchId,
       eventId: parsed.data.eventId,

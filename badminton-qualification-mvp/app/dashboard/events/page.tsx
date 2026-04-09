@@ -6,13 +6,15 @@ import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getEventList } from "@/lib/services/dashboard-service";
 
 export const dynamic = "force-dynamic";
 
 export default async function EventsPage() {
-  const events = await getEventList();
+  const user = await requireUser();
+  const events = await getEventList(user);
 
   return (
     <div className="grid gap-6">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
@@ -13,10 +14,14 @@ import { cn } from "@/lib/utils";
 
 export function LoginForm({
   sampleEmail,
-  samplePassword
+  samplePassword,
+  allowSampleFill = false,
+  applyHref
 }: {
-  sampleEmail: string;
-  samplePassword: string;
+  sampleEmail?: string;
+  samplePassword?: string;
+  allowSampleFill?: boolean;
+  applyHref?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -74,6 +79,10 @@ export function LoginForm({
   }
 
   function fillSampleAccount() {
+    if (!sampleEmail || !samplePassword) {
+      return;
+    }
+
     setEmail(sampleEmail);
     setPassword(samplePassword);
     setError("");
@@ -102,12 +111,18 @@ export function LoginForm({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button disabled={loading} onClick={fillSampleAccount} size="sm" type="button" variant="outline">
-            填充示例账号
-          </Button>
-          <p className="text-sm text-slate-500">表单默认保持空状态。</p>
-        </div>
+        {allowSampleFill ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button disabled={loading} onClick={fillSampleAccount} size="sm" type="button" variant="outline">
+              填充示例账号
+            </Button>
+            <p className="text-sm text-slate-500">表单默认保持空状态。</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+            没有账号的主办方需要先提交申请，审批通过后再完成首次设密。
+          </div>
+        )}
 
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
@@ -171,6 +186,15 @@ export function LoginForm({
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
             {loading ? "登录中..." : "主办方登录"}
           </Button>
+
+          {applyHref ? (
+            <Link
+              className="block text-center text-sm text-slate-600 underline-offset-4 transition hover:text-slate-950 hover:underline"
+              href={applyHref}
+            >
+              没有账号，申请开通
+            </Link>
+          ) : null}
         </form>
       </CardContent>
     </Card>

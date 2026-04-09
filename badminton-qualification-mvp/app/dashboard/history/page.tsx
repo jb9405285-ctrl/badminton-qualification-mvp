@@ -1,11 +1,14 @@
-import { prisma } from "@/lib/prisma";
-
 import { HistoryManagementClient } from "@/components/dashboard/history-management-client";
+import { buildBatchWhereForUser } from "@/lib/auth/access";
+import { requireUser } from "@/lib/auth/session";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
+  const user = await requireUser();
   const batches = await prisma.uploadBatch.findMany({
+    where: buildBatchWhereForUser(user),
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     include: {
       event: {

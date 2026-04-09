@@ -1,4 +1,5 @@
 import { BatchCheckClient } from "@/components/dashboard/batch-check-client";
+import { requireUser } from "@/lib/auth/session";
 import { getEventList, getHistoryList } from "@/lib/services/dashboard-service";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,8 @@ export default async function BatchCheckPage({
     eventId?: string;
   };
 }) {
-  const [events, batches] = await Promise.all([getEventList(), getHistoryList()]);
+  const user = await requireUser();
+  const [events, batches] = await Promise.all([getEventList(user), getHistoryList(user)]);
 
   return (
     <BatchCheckClient

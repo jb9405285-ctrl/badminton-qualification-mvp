@@ -1,6 +1,7 @@
 import type { User } from "@prisma/client";
 import { z } from "zod";
 
+import { buildBatchWhereForUser } from "@/lib/auth/access";
 import { prisma } from "@/lib/prisma";
 import type { HistoryAction } from "@/lib/types";
 
@@ -56,12 +57,12 @@ function normalizeReason(reason?: string) {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-async function fetchBatches(ids: string[]) {
+async function fetchBatches(actor: User, ids: string[]) {
   const normalizedIds = uniqueIds(ids);
   const batches = await prisma.uploadBatch.findMany({
-    where: {
+    where: buildBatchWhereForUser(actor, {
       id: { in: normalizedIds }
-    },
+    }),
     include: {
       event: {
         select: {
@@ -134,7 +135,7 @@ async function writeAuditLogs(
   });
 }
 
-export async function listHistoryBatches(filters: z.infer<typeof historyListQuerySchema>) {
+export async function listHistoryBatches(actor: User, filters: z.infer<typeof historyListQuerySchema>) {
   const normalized = historyListQuerySchema.parse(filters);
   const view = normalized.view ?? "active";
   const where = {
@@ -206,9 +207,9 @@ export async function listHistoryBatches(filters: z.infer<typeof historyListQuer
   const skip = (page - 1) * pageSize;
 
   const [total, items] = await Promise.all([
-    prisma.uploadBatch.count({ where }),
+    prisma.uploadBatch.count({ where: buildBatchWhereForUser(actor, where) }),
     prisma.uploadBatch.findMany({
-      where,
+      where: buildBatchWhereForUser(actor, where),
       orderBy: { createdAt: "desc" },
       skip,
       take: pageSize,
@@ -350,7 +351,7 @@ export async function deleteHistoryBatches(
     reason?: string;
   } = {}
 ) {
-  const batches = await fetchBatches(ids);
+  const batches = await fetchBatches(actor, ids);
   const deletedBatches = batches.filter((batch) => batch.isDeleted);
   const activeBatches = batches.filter((batch) => !batch.isDeleted);
 
@@ -391,7 +392,7 @@ export async function softDeleteHistoryBatches(
     reason?: string;
   } = {}
 ) {
-  const batches = await fetchBatches(ids);
+  const batches = await fetchBatches(actor, ids);
   return softDeleteFetchedHistoryBatches(actor, batches, options);
 }
 
@@ -402,7 +403,7 @@ export async function permanentlyDeleteHistoryBatches(
     reason?: string;
   } = {}
 ) {
-  const batches = await fetchBatches(ids);
+  const batches = await fetchBatches(actor, ids);
   return permanentlyDeleteFetchedHistoryBatches(actor, batches, options);
 }
 
@@ -413,7 +414,7 @@ export async function archiveHistoryBatches(
     reason?: string;
   } = {}
 ) {
-  const batches = await fetchBatches(ids);
+  const batches = await fetchBatches(actor, ids);
 
   if (batches.some((batch) => batch.isDeleted)) {
     throw new HistoryApiError("已删除的历史记录不能归档。", 409, "HISTORY_ARCHIVE_CONFLICT", {
@@ -453,9 +454,9 @@ export async function archiveHistoryBatches(
   return batches;
 }
 
-export async function getHistoryBatchById(id: string) {
-  const batch = await prisma.uploadBatch.findUnique({
-    where: { id },
+export async function getHistoryBatchById(actor: User, id: string) {
+  const batch = await prisma.uploadBatch.findFirst({
+    where: buildBatchWhereForUser(actor, { id }),
     include: {
       event: {
         select: {

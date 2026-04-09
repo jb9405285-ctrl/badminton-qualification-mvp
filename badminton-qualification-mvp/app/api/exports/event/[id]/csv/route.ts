@@ -1,17 +1,24 @@
+import type { User } from "@prisma/client";
+
 import { NextResponse } from "next/server";
 
+import { buildBatchWhereForUser, buildEventWhereForUser } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { createVerificationCsv } from "@/lib/export/report";
 import { formatDateTime, formatStatusLabel } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
 
-async function findSelectedBatch(eventId: string, batchId: string | null) {
+async function findSelectedBatch(
+  user: Pick<User, "role" | "organizationId">,
+  eventId: string,
+  batchId: string | null
+) {
   if (batchId) {
     return prisma.uploadBatch.findFirst({
-      where: {
+      where: buildBatchWhereForUser(user, {
         id: batchId,
         eventId
-      },
+      }),
       include: {
         verificationRecords: {
           orderBy: [{ rowIndex: "asc" }, { createdAt: "asc" }]
@@ -22,10 +29,10 @@ async function findSelectedBatch(eventId: string, batchId: string | null) {
 
   return (
     (await prisma.uploadBatch.findFirst({
-      where: {
+      where: buildBatchWhereForUser(user, {
         eventId,
         status: "PROCESSED"
-      },
+      }),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: {
         verificationRecords: {
@@ -34,10 +41,10 @@ async function findSelectedBatch(eventId: string, batchId: string | null) {
       }
     })) ??
     (await prisma.uploadBatch.findFirst({
-      where: {
+      where: buildBatchWhereForUser(user, {
         eventId,
         isDeleted: false
-      },
+      }),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       include: {
         verificationRecords: {
@@ -70,8 +77,8 @@ export async function GET(
     );
   }
 
-  const event = await prisma.event.findUnique({
-    where: { id: params.id },
+  const event = await prisma.event.findFirst({
+    where: buildEventWhereForUser(user, { id: params.id }),
     select: {
       id: true,
       name: true
@@ -90,7 +97,7 @@ export async function GET(
 
   const url = new URL(request.url);
   const batchId = url.searchParams.get("batchId");
-  const selectedBatch = await findSelectedBatch(params.id, batchId);
+  const selectedBatch = await findSelectedBatch(user, params.id, batchId);
   const records = selectedBatch?.verificationRecords ?? [];
 
   if (batchId && !selectedBatch) {

@@ -8,13 +8,14 @@ import {
   LayoutDashboard,
   Settings2,
   ShieldAlert,
-  History
+  History,
+  UserCheck
 } from "lucide-react";
 
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const items = [
+const defaultItems = [
   { href: "/dashboard", label: "概览", icon: LayoutDashboard },
   { href: "/dashboard/events", label: "赛事管理", icon: FolderKanban },
   { href: "/dashboard/batch-check", label: "上传名单", icon: FileSearch2 },
@@ -22,8 +23,15 @@ const items = [
   { href: "/dashboard/settings", label: "教程", icon: Settings2 }
 ];
 
-export function DashboardSidebar() {
+export function DashboardSidebar({
+  canReviewApplications = false
+}: {
+  canReviewApplications?: boolean;
+}) {
   const pathname = usePathname();
+  const items = canReviewApplications
+    ? [...defaultItems, { href: "/dashboard/applications", label: "主办方审批", icon: UserCheck }]
+    : defaultItems;
 
   return (
     <aside className="dashboard-grid hidden w-80 shrink-0 border-r border-white/10 bg-[#06111c] px-5 py-6 text-white lg:block">

@@ -37,7 +37,7 @@ export async function DELETE(
   }
 
   try {
-    await getHistoryBatchById(params.id);
+    await getHistoryBatchById(user, params.id);
     const body = await request.json().catch(() => null);
     const parsed = historyDeleteSchema.safeParse(body ?? {});
 
@@ -109,7 +109,7 @@ export async function PATCH(
   }
 
   try {
-    await getHistoryBatchById(params.id);
+    await getHistoryBatchById(user, params.id);
     const body = await request.json().catch(() => null);
     const parsed = historyActionSchema.safeParse(body ?? {});
 

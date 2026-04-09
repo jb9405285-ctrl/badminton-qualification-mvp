@@ -4,13 +4,14 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { SESSION_COOKIE_NAME } from "@/lib/constants";
-import { ensureDemoData } from "@/lib/data/bootstrap";
+import { ensureAppData } from "@/lib/data/bootstrap";
 import { prisma } from "@/lib/prisma";
+import { isSuperAdmin } from "@/lib/auth/access";
 
 const SESSION_TTL_DAYS = 7;
 
 export async function createSession(userId: string) {
-  await ensureDemoData();
+  await ensureAppData();
 
   const token = randomUUID();
   const expiresAt = new Date();
@@ -34,7 +35,7 @@ export async function createSession(userId: string) {
 }
 
 export async function getCurrentUser() {
-  await ensureDemoData();
+  await ensureAppData();
 
   const token = cookies().get(SESSION_COOKIE_NAME)?.value;
 
@@ -44,10 +45,26 @@ export async function getCurrentUser() {
 
   const session = await prisma.session.findUnique({
     where: { token },
-    include: { user: true }
+    include: {
+      user: {
+        include: {
+          organization: true
+        }
+      }
+    }
   });
 
   if (!session) {
+    return null;
+  }
+
+  if (session.user.status !== "ACTIVE") {
+    await prisma.session.deleteMany({
+      where: {
+        token
+      }
+    });
+
     return null;
   }
 
@@ -64,6 +81,16 @@ export async function requireUser() {
 
   if (!user) {
     redirect("/login");
+  }
+
+  return user;
+}
+
+export async function requireSuperAdmin() {
+  const user = await requireUser();
+
+  if (!isSuperAdmin(user)) {
+    redirect("/dashboard");
   }
 
   return user;

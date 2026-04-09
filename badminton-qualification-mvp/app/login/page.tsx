@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/dashboard/login-form";
 import { PublicShell } from "@/components/layout/public-shell";
+import { isDemoMode } from "@/lib/app-mode";
 import { DEMO_ACCOUNT_EMAIL, DEMO_ACCOUNT_PASSWORD } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
+  const demoMode = isDemoMode();
 
   if (user) {
     redirect("/dashboard");
@@ -23,22 +25,41 @@ export default async function LoginPage() {
           <div className="relative flex w-full flex-col justify-center gap-8 p-8 sm:p-10">
             <div className="max-w-3xl space-y-5">
               <p className="text-sm font-medium tracking-[0.22em] text-cyan-100/80">主办方登录</p>
-              <h1 className="font-serif text-4xl leading-tight text-balance sm:text-5xl">主办方登录后直接开始操作</h1>
+              <h1 className="font-serif text-4xl leading-tight text-balance sm:text-5xl">
+                {demoMode ? "演示账号可直接体验完整流程" : "审批通过后，再进入正式工作台"}
+              </h1>
               <p className="max-w-2xl text-base leading-8 text-slate-300 sm:text-lg">
-                登录后先查看教程，再按顺序创建赛事、上传名单、查看结果和导出 PDF。
+                {demoMode
+                  ? "登录后先查看教程，再按顺序创建赛事、上传名单、查看结果和导出 PDF。"
+                  : "正式站不开放自助注册。主办方先提交申请，平台管理员批准后再完成首次设密。"}
               </p>
             </div>
 
             <div className="grid max-w-2xl gap-3 text-sm leading-7 text-slate-300">
-              <p>1. 查看规则与教程。</p>
-              <p>2. 创建赛事并上传名单。</p>
-              <p>3. 查看核验结果并导出报告。</p>
+              {demoMode ? (
+                <>
+                  <p>1. 查看规则与教程。</p>
+                  <p>2. 创建赛事并上传名单。</p>
+                  <p>3. 查看核验结果并导出报告。</p>
+                </>
+              ) : (
+                <>
+                  <p>1. 主办方先提交申请。</p>
+                  <p>2. 平台管理员审核并开通账号。</p>
+                  <p>3. 首次设密后进入正式工作台。</p>
+                </>
+              )}
             </div>
           </div>
         </section>
 
         <section className="flex w-full max-w-xl flex-col justify-center lg:min-w-[460px]">
-          <LoginForm sampleEmail={DEMO_ACCOUNT_EMAIL} samplePassword={DEMO_ACCOUNT_PASSWORD} />
+          <LoginForm
+            allowSampleFill={demoMode}
+            applyHref={demoMode ? undefined : "/apply"}
+            sampleEmail={demoMode ? DEMO_ACCOUNT_EMAIL : undefined}
+            samplePassword={demoMode ? DEMO_ACCOUNT_PASSWORD : undefined}
+          />
 
           <div className="mt-5 grid gap-2 px-2 text-sm text-muted-foreground">
             <p>© 2026 羽毛球赛事资格核验工具</p>

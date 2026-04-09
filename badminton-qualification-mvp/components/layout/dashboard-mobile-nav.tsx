@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-const items = [
+const defaultItems = [
   { href: "/dashboard", label: "概览" },
   { href: "/dashboard/events", label: "赛事" },
   { href: "/dashboard/batch-check", label: "名单" },
@@ -13,8 +13,15 @@ const items = [
   { href: "/dashboard/settings", label: "教程" }
 ];
 
-export function DashboardMobileNav() {
+export function DashboardMobileNav({
+  canReviewApplications = false
+}: {
+  canReviewApplications?: boolean;
+}) {
   const pathname = usePathname();
+  const items = canReviewApplications
+    ? [...defaultItems, { href: "/dashboard/applications", label: "审批" }]
+    : defaultItems;
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">

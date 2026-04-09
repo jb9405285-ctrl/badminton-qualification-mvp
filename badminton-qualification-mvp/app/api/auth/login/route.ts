@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { createSession } from "@/lib/auth/session";
 import { verifyPassword } from "@/lib/auth/password";
-import { ensureDemoData } from "@/lib/data/bootstrap";
+import { ensureAppData } from "@/lib/data/bootstrap";
 import { prisma } from "@/lib/prisma";
 
 const loginSchema = z.object({
@@ -13,7 +13,7 @@ const loginSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  await ensureDemoData();
+  await ensureAppData();
 
   const body = await request.json().catch(() => null);
   const parsed = loginSchema.safeParse(body);
@@ -34,7 +34,37 @@ export async function POST(request: Request) {
     }
   });
 
-  if (!user || !verifyPassword(parsed.data.password, user.passwordHash)) {
+  if (!user) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "账号或密码错误。"
+      },
+      { status: 401 }
+    );
+  }
+
+  if (user.status !== "ACTIVE") {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "该账号已被平台管理员停用。"
+      },
+      { status: 403 }
+    );
+  }
+
+  if (!user.passwordHash) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "账号已开通，但尚未完成首次设密。请联系平台管理员获取设密链接。"
+      },
+      { status: 403 }
+    );
+  }
+
+  if (!verifyPassword(parsed.data.password, user.passwordHash)) {
     return NextResponse.json(
       {
         ok: false,

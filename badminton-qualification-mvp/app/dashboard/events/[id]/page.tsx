@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { requireUser } from "@/lib/auth/session";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getEventDetail } from "@/lib/services/dashboard-service";
 
@@ -24,7 +25,8 @@ export default async function EventDetailPage({
     batchId?: string;
   };
 }) {
-  const event = await getEventDetail(params.id);
+  const user = await requireUser();
+  const event = await getEventDetail(user, params.id);
 
   if (!event) {
     notFound();

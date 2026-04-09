@@ -73,6 +73,8 @@ npm run dev:local
 
 ## 4. 演示账号
 
+仅在 `APP_MODE=demo` 时启用：
+
 - 邮箱：`admin@example.com`
 - 密码：`password123`
 
@@ -252,19 +254,32 @@ npm run start
 其中：
 
 - `render:build` 会先生成 PostgreSQL 版 Prisma Client，再执行 `next build`
-- `render:predeploy` 会把 schema 推到线上数据库，并补齐演示账号和演示数据
+- `render:predeploy` 会把 schema 推到线上数据库，并按 `APP_MODE` 补齐演示数据或超级管理员账号
 
 ### 11.2 现有 Render 服务需要确认的环境变量
 
-至少保留：
+演示站至少保留：
 
 ```text
 DATABASE_URL=你当前线上 PostgreSQL 连接串
+APP_MODE=demo
 PERSIST_UPLOAD_FILES=false
 NODE_ENV=production
 ```
 
 如果你昨天用的是 Supabase PostgreSQL，可以继续沿用，不需要因为这次升级强制换库。
+
+如果你现在要新增正式站，再加一套 Render 服务，正式站环境变量改成：
+
+```text
+DATABASE_URL=正式站独立 PostgreSQL 连接串
+APP_MODE=production
+SUPER_ADMIN_EMAIL=你的管理员邮箱
+SUPER_ADMIN_PASSWORD=你的管理员密码
+SUPER_ADMIN_NAME=平台管理员
+PERSIST_UPLOAD_FILES=false
+NODE_ENV=production
+```
 
 ### 11.3 重新部署前的仓库检查
 
@@ -294,11 +309,20 @@ https://你的-render域名/search
 https://你的-render域名/login
 ```
 
-演示账号仍是：
+演示站账号仍是：
 
 ```text
 admin@example.com
 password123
+```
+
+正式站不再预填演示账号。正式流程变成：
+
+```text
+/login           已有账号直接登录
+/apply           主办方提交申请
+/dashboard/applications  平台管理员审批
+/setup-account   批准后首次设密
 ```
 
 ### 11.5 免费方案限制

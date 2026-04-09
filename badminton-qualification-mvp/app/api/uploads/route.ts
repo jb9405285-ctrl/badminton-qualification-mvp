@@ -2,6 +2,7 @@ import path from "path";
 
 import { NextResponse } from "next/server";
 
+import { buildEventWhereForUser } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { processBatchVerification } from "@/lib/services/batch-service";
@@ -62,6 +63,23 @@ export async function POST(request: Request) {
   }
 
   try {
+    const event = await prisma.event.findFirst({
+      where: buildEventWhereForUser(user, { id: eventId }),
+      select: {
+        id: true
+      }
+    });
+
+    if (!event) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "赛事不存在，或当前账号无权上传到该赛事。"
+        },
+        { status: 404 }
+      );
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const storedFilePath = await persistUploadFile(file.name, buffer);
     const parsed = parseRosterFile(file.name, buffer);

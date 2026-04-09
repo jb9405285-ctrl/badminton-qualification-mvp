@@ -44,7 +44,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const result = await listHistoryBatches(parsed.data);
+    const result = await listHistoryBatches(user, parsed.data);
 
     const items: HistoryBatchListItem[] = result.items.map((batch) => ({
       id: batch.id,

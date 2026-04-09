@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { z } from "zod";
 
+import { buildVerificationWhereForUser } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -41,6 +42,25 @@ export async function PATCH(
         message: parsed.error.issues[0]?.message ?? "备注内容不合法。"
       },
       { status: 400 }
+    );
+  }
+
+  const record = await prisma.verificationRecord.findFirst({
+    where: buildVerificationWhereForUser(user, {
+      id: params.id
+    }),
+    select: {
+      id: true
+    }
+  });
+
+  if (!record) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "记录不存在，或当前账号无权修改该记录。"
+      },
+      { status: 404 }
     );
   }
 

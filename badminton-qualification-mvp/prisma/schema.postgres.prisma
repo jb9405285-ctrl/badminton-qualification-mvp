@@ -8,20 +8,30 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  name          String
-  email         String        @unique
-  passwordHash  String
-  role          String        @default("ADMIN")
-  lastLoginAt   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  events        Event[]
-  sessions      Session[]
-  uploadBatches UploadBatch[]
-  deletedUploadBatches UploadBatch[] @relation("UploadBatchDeletedBy")
-  archivedUploadBatches UploadBatch[] @relation("UploadBatchArchivedBy")
-  batchAuditLogs BatchAuditLog[] @relation("BatchAuditLogActor")
+  id                   String                 @id @default(cuid())
+  name                 String
+  email                String                 @unique
+  passwordHash         String?
+  role                 String                 @default("ORGANIZER")
+  status               String                 @default("ACTIVE")
+  organizationId       String?
+  lastLoginAt          DateTime?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  organization         Organization?          @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  events               Event[]
+  sessions             Session[]
+  uploadBatches        UploadBatch[]
+  deletedUploadBatches UploadBatch[]          @relation("UploadBatchDeletedBy")
+  archivedUploadBatches UploadBatch[]         @relation("UploadBatchArchivedBy")
+  batchAuditLogs       BatchAuditLog[]        @relation("BatchAuditLogActor")
+  reviewedApplications OrganizerApplication[] @relation("OrganizerApplicationReviewedBy")
+  approvedApplications OrganizerApplication[] @relation("OrganizerApplicationApprovedUser")
+  passwordSetupTokens  PasswordSetupToken[]
+
+  @@index([organizationId, createdAt])
+  @@index([role, createdAt])
+  @@index([status, createdAt])
 }
 
 model Session {
@@ -33,8 +43,60 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Organization {
+  id           String                 @id @default(cuid())
+  name         String
+  slug         String                 @unique
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  status       String                 @default("ACTIVE")
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  users        User[]
+  events       Event[]
+  applications OrganizerApplication[]
+}
+
+model OrganizerApplication {
+  id               String        @id @default(cuid())
+  organizationName String
+  contactName      String
+  contactEmail     String
+  contactPhone     String?
+  note             String?
+  status           String        @default("PENDING")
+  reviewedAt       DateTime?
+  reviewedById     String?
+  reviewNote       String?
+  organizationId   String?
+  approvedUserId   String?       @unique
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  reviewedBy       User?         @relation("OrganizerApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  approvedUser     User?         @relation("OrganizerApplicationApprovedUser", fields: [approvedUserId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([contactEmail, createdAt])
+}
+
+model PasswordSetupToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([usedAt])
+}
+
 model Event {
   id                  String               @id @default(cuid())
+  organizationId      String?
   name                String
   organizerName       String
   eventDate           DateTime
@@ -43,10 +105,12 @@ model Event {
   createdById         String
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  organization        Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   createdBy           User                 @relation(fields: [createdById], references: [id], onDelete: Restrict)
   batches             UploadBatch[]
   verificationRecords VerificationRecord[]
 
+  @@index([organizationId, createdAt])
   @@index([eventDate])
   @@index([createdAt])
 }
