@@ -285,6 +285,7 @@ SMTP_PASSWORD=你的 SMTP 密码
 SMTP_FROM_EMAIL=发送邮箱
 SMTP_FROM_NAME=羽毛球赛事资格核验工具
 SMTP_REPLY_TO=可选，用于回复邮箱
+APP_BASE_URL=可选，建议填正式站域名，确保邮件里的链接使用正确公网地址
 PERSIST_UPLOAD_FILES=false
 NODE_ENV=production
 ```

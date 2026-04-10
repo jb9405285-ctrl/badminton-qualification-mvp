@@ -11,6 +11,7 @@ import {
   revokeOrganizerAccess
 } from "@/lib/services/organizer-application-service";
 import { isEmailDeliveryConfigured, sendOrganizerApprovalEmail } from "@/lib/notifications/email";
+import { getPublicOrigin } from "@/lib/url";
 
 const applicationDecisionSchema = z.object({
   action: z.enum(["approve", "reject", "revoke", "restore"]),
@@ -59,7 +60,7 @@ export async function PATCH(
   try {
     if (parsed.data.action === "approve") {
       const approved = await approveOrganizerApplication(params.id, user);
-      const origin = new URL(request.url).origin;
+      const origin = getPublicOrigin(request);
       const setupPath = `/setup-account?token=${approved.token}`;
       const setupUrl = `${origin}${setupPath}`;
       let emailSent = false;
