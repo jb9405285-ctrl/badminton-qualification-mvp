@@ -10,6 +10,7 @@ import {
   restoreOrganizerAccess,
   revokeOrganizerAccess
 } from "@/lib/services/organizer-application-service";
+import { isEmailDeliveryConfigured, sendOrganizerApprovalEmail } from "@/lib/notifications/email";
 
 const applicationDecisionSchema = z.object({
   action: z.enum(["approve", "reject", "revoke", "restore"]),
@@ -60,13 +61,40 @@ export async function PATCH(
       const approved = await approveOrganizerApplication(params.id, user);
       const origin = new URL(request.url).origin;
       const setupPath = `/setup-account?token=${approved.token}`;
+      const setupUrl = `${origin}${setupPath}`;
+      let emailSent = false;
+      let emailMessage = "";
+
+      if (isEmailDeliveryConfigured()) {
+        try {
+          await sendOrganizerApprovalEmail({
+            to: approved.user.email,
+            contactName: approved.user.name,
+            organizationName: approved.organization.name,
+            setupUrl,
+            expiresAt: approved.expiresAt
+          });
+          emailSent = true;
+          emailMessage = "设密邮件已自动发送到申请邮箱。";
+        } catch (error) {
+          console.error("Failed to send organizer approval email", error);
+          emailMessage =
+            error instanceof Error
+              ? `主办方账号已创建，但自动邮件发送失败：${error.message}`
+              : "主办方账号已创建，但自动邮件发送失败。";
+        }
+      } else {
+        emailMessage = "主办方账号已创建，但当前未配置自动发信；请手动复制设密链接发送给申请人。";
+      }
 
       return NextResponse.json({
         ok: true,
         message: "申请已批准，主办方账号已创建。",
-        setupUrl: `${origin}${setupPath}`,
+        setupUrl,
         setupPath,
-        expiresAt: approved.expiresAt.toISOString()
+        expiresAt: approved.expiresAt.toISOString(),
+        emailSent,
+        emailMessage
       });
     }
 

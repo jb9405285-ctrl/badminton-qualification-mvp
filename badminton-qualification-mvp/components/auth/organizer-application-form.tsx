@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,7 @@ export function OrganizerApplicationForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState("");
+  const [applicationId, setApplicationId] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,9 +49,10 @@ export function OrganizerApplicationForm() {
 
       setSubmitted(true);
       setMessage(payload.message);
+      setApplicationId(payload.applicationId ?? "");
       toast({
         title: "申请已提交",
-        description: "平台管理员审批通过后，你会收到正式开通方式。",
+        description: "请保存申请编号，后续可自行查询审批进度。",
         tone: "success"
       });
     } catch (error) {
@@ -76,8 +79,29 @@ export function OrganizerApplicationForm() {
         </div>
 
         {submitted ? (
-          <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-800">
-            {message || "申请已提交，等待平台管理员审批。"}
+          <div className="space-y-4 rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-800">
+            <p>{message || "申请已提交，等待平台管理员审批。"}</p>
+            {applicationId ? (
+              <div className="rounded-2xl border border-emerald-200 bg-white/80 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-700">申请编号</p>
+                <p className="mt-2 font-mono text-sm text-slate-900">{applicationId}</p>
+                <p className="mt-2 text-xs leading-5 text-emerald-700">
+                  请保存这个编号。之后可用“申请编号 + 联系邮箱”在查询页查看审批结果。
+                </p>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                className="inline-flex h-10 items-center justify-center rounded-2xl bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                href={
+                  applicationId
+                    ? `/apply/status?applicationId=${encodeURIComponent(applicationId)}&contactEmail=${encodeURIComponent(contactEmail)}`
+                    : "/apply/status"
+                }
+              >
+                查询申请进度
+              </Link>
+            </div>
           </div>
         ) : (
           <form className="space-y-5" onSubmit={handleSubmit}>

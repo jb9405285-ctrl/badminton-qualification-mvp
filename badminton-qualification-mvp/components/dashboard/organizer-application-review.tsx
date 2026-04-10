@@ -101,9 +101,10 @@ export function OrganizerApplicationReview({
           )
         );
         toast({
-          title: "申请已批准",
-          description: payload.setupUrl,
-          tone: "success"
+          title: payload.emailSent ? "申请已批准，邮件已发送" : "申请已批准",
+          description: payload.emailMessage || payload.setupUrl,
+          tone: payload.emailSent ? "success" : "warning",
+          durationMs: payload.emailSent ? 3200 : 5200
         });
       } else {
         setItems((current) =>
@@ -198,6 +199,7 @@ export function OrganizerApplicationReview({
             <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2">
                 <CardTitle className="text-lg text-slate-950">{item.organizationName}</CardTitle>
+                <p className="font-mono text-xs text-slate-500">申请编号：{item.id}</p>
                 <div className="flex flex-wrap gap-3 text-sm text-slate-600">
                   <span>{item.contactName}</span>
                   <span>{item.contactEmail}</span>

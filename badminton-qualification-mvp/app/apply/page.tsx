@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { ApplicationStatusForm } from "@/components/auth/application-status-form";
 import { OrganizerApplicationForm } from "@/components/auth/organizer-application-form";
 import { PublicShell } from "@/components/layout/public-shell";
 
@@ -15,10 +18,19 @@ export default function ApplyPage() {
           <p className="text-base leading-8 text-slate-600 sm:text-lg">
             正式站不开放自助注册。你提交申请后，平台管理员审核通过，系统才会生成首次设密链接。
           </p>
+          <div className="pt-2">
+            <Link
+              className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200/90 bg-white px-5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              href="/apply/status"
+            >
+              已提交过申请，查询进度
+            </Link>
+          </div>
         </section>
 
-        <section className="w-full max-w-xl lg:ml-auto">
+        <section className="w-full max-w-xl space-y-6 lg:ml-auto">
           <OrganizerApplicationForm />
+          <ApplicationStatusForm />
         </section>
       </main>
     </PublicShell>

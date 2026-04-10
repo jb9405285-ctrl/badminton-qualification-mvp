@@ -126,3 +126,17 @@ export type OrganizerApplicationListItem = {
   accountReady: boolean;
   accountStatus: AccountAccessStatus | null;
 };
+
+export type OrganizerApplicationStatusLookup = {
+  id: string;
+  organizationName: string;
+  contactEmail: string;
+  status: OrganizerApplicationStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+  reviewNote: string | null;
+  setupPath: string | null;
+  setupTokenExpiresAt: string | null;
+  accountReady: boolean;
+  accountStatus: AccountAccessStatus | null;
+};

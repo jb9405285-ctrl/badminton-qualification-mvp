@@ -72,6 +72,62 @@ export async function createOrganizerApplication(input: CreateApplicationInput) 
   });
 }
 
+export async function getOrganizerApplicationStatus(input: {
+  applicationId: string;
+  contactEmail: string;
+}) {
+  const applicationId = input.applicationId.trim();
+  const contactEmail = input.contactEmail.trim().toLowerCase();
+
+  const application = await prisma.organizerApplication.findUnique({
+    where: { id: applicationId },
+    include: {
+      approvedUser: {
+        select: {
+          passwordHash: true,
+          status: true,
+          passwordSetupTokens: {
+            where: {
+              usedAt: null,
+              expiresAt: {
+                gt: new Date()
+              }
+            },
+            orderBy: {
+              createdAt: "desc"
+            },
+            take: 1,
+            select: {
+              token: true,
+              expiresAt: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!application || application.contactEmail !== contactEmail) {
+    throw new Error("申请编号或联系邮箱不匹配。");
+  }
+
+  const setupToken = application.approvedUser?.passwordSetupTokens[0] ?? null;
+
+  return {
+    id: application.id,
+    organizationName: application.organizationName,
+    contactEmail: application.contactEmail,
+    status: application.status,
+    createdAt: application.createdAt,
+    reviewedAt: application.reviewedAt,
+    reviewNote: application.reviewNote,
+    setupPath: setupToken ? `/setup-account?token=${setupToken.token}` : null,
+    setupTokenExpiresAt: setupToken?.expiresAt ?? null,
+    accountReady: Boolean(application.approvedUser?.passwordHash),
+    accountStatus: application.approvedUser?.status ?? null
+  };
+}
+
 export async function listOrganizerApplications() {
   return prisma.organizerApplication.findMany({
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
