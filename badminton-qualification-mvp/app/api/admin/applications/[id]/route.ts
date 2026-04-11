@@ -6,17 +6,15 @@ import { isSuperAdmin } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   approveOrganizerApplication,
-  getOrganizerApplicationSetupEmailData,
   removeOrganizerApplicationAccess,
   rejectOrganizerApplication,
   restoreOrganizerAccess,
   revokeOrganizerAccess
 } from "@/lib/services/organizer-application-service";
-import { isEmailDeliveryConfigured, sendOrganizerApprovalEmail } from "@/lib/notifications/email";
 import { getPublicOrigin } from "@/lib/url";
 
 const applicationDecisionSchema = z.object({
-  action: z.enum(["approve", "reject", "revoke", "restore", "remove", "resendEmail"]),
+  action: z.enum(["approve", "reject", "revoke", "restore", "remove"]),
   note: z.string().trim().max(500, "处理备注不能超过 500 字。").optional()
 });
 
@@ -65,39 +63,13 @@ export async function PATCH(
       const origin = getPublicOrigin(request);
       const setupPath = `/setup-account?token=${approved.token}`;
       const setupUrl = `${origin}${setupPath}`;
-      let emailSent = false;
-      let emailMessage = "";
-
-      if (isEmailDeliveryConfigured()) {
-        try {
-          await sendOrganizerApprovalEmail({
-            to: approved.user.email,
-            contactName: approved.user.name,
-            organizationName: approved.organization.name,
-            setupUrl,
-            expiresAt: approved.expiresAt
-          });
-          emailSent = true;
-          emailMessage = "设密邮件已自动发送到申请邮箱。";
-        } catch (error) {
-          console.error("Failed to send organizer approval email", error);
-          emailMessage =
-            error instanceof Error
-              ? `主办方账号已创建，但自动邮件发送失败：${error.message}`
-              : "主办方账号已创建，但自动邮件发送失败。";
-        }
-      } else {
-        emailMessage = "主办方账号已创建，但当前未配置自动发信；请手动复制设密链接发送给申请人。";
-      }
 
       return NextResponse.json({
         ok: true,
         message: "申请已批准，主办方账号已创建。",
         setupUrl,
         setupPath,
-        expiresAt: approved.expiresAt.toISOString(),
-        emailSent,
-        emailMessage
+        expiresAt: approved.expiresAt.toISOString()
       });
     }
 
@@ -125,39 +97,6 @@ export async function PATCH(
       return NextResponse.json({
         ok: true,
         message: "权限已删除，该记录已从审批页移除；原邮箱可以重新提交申请。"
-      });
-    }
-
-    if (parsed.data.action === "resendEmail") {
-      if (!isEmailDeliveryConfigured()) {
-        return NextResponse.json(
-          {
-            ok: false,
-            message: "当前未配置自动发信，无法重发邮件。请手动复制设密链接发送给申请人。"
-          },
-          { status: 400 }
-        );
-      }
-
-      const emailData = await getOrganizerApplicationSetupEmailData(params.id);
-      const setupPath = `/setup-account?token=${emailData.token}`;
-      const setupUrl = `${getPublicOrigin(request)}${setupPath}`;
-
-      await sendOrganizerApprovalEmail({
-        to: emailData.to,
-        contactName: emailData.contactName,
-        organizationName: emailData.organizationName,
-        setupUrl,
-        expiresAt: emailData.expiresAt
-      });
-
-      return NextResponse.json({
-        ok: true,
-        message: "设密邮件已重新发送到申请邮箱。",
-        setupUrl,
-        setupPath,
-        expiresAt: emailData.expiresAt.toISOString(),
-        emailSent: true
       });
     }
 

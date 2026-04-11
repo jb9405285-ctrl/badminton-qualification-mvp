@@ -3,7 +3,7 @@ import path from "node:path";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ["pdfkit", "nodemailer"],
+    serverComponentsExternalPackages: ["pdfkit"],
     serverActions: {
       bodySizeLimit: "10mb"
     }

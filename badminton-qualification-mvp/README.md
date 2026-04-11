@@ -277,21 +277,12 @@ APP_MODE=production
 SUPER_ADMIN_EMAIL=你的管理员邮箱
 SUPER_ADMIN_PASSWORD=你的管理员密码
 SUPER_ADMIN_NAME=平台管理员
-SMTP_HOST=你的 SMTP 主机
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=你的 SMTP 用户名
-SMTP_PASSWORD=你的 SMTP 密码
-SMTP_FROM_EMAIL=发送邮箱
-SMTP_FROM_NAME=羽毛球赛事资格核验工具
-SMTP_REPLY_TO=可选，用于回复邮箱
-SMTP_TIMEOUT_MS=可选，默认 20000，审批时等待邮件服务返回明确成功或失败
 APP_BASE_URL=可选，建议填正式站域名，确保邮件里的链接使用正确公网地址
 PERSIST_UPLOAD_FILES=false
 NODE_ENV=production
 ```
 
-如果你希望“批准申请后自动把首次设密链接发送到申请邮箱”，正式站必须配置以上 SMTP 变量。若未配置，审批页仍会生成设密链接，但需要管理员手动复制发送。
+批准申请后不会自动发送邮件。申请人可使用“申请编号 + 联系邮箱”在申请状态页查看审批结果和首次设密入口。
 
 ### 11.3 重新部署前的仓库检查
 
