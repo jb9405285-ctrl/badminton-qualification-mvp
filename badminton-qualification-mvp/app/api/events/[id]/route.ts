@@ -113,3 +113,51 @@ export async function PATCH(
     }
   });
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "请先登录后再删除赛事。"
+      },
+      { status: 401 }
+    );
+  }
+
+  const existingEvent = await prisma.event.findFirst({
+    where: buildEventWhereForUser(user, {
+      id: params.id
+    }),
+    select: {
+      id: true,
+      name: true
+    }
+  });
+
+  if (!existingEvent) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "赛事不存在或已被删除。"
+      },
+      { status: 404 }
+    );
+  }
+
+  await prisma.event.delete({
+    where: {
+      id: existingEvent.id
+    }
+  });
+
+  return NextResponse.json({
+    ok: true,
+    message: `赛事“${existingEvent.name}”已删除。`
+  });
+}

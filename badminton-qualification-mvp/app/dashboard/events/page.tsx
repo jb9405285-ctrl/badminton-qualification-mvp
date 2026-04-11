@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { CreateEventForm } from "@/components/dashboard/create-event-form";
+import { DeleteEventButton } from "@/components/dashboard/delete-event-button";
 import { EditEventForm } from "@/components/dashboard/edit-event-form";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,11 @@ export default async function EventsPage() {
                     >
                       {latestBatch ? "查看赛事结果" : "上传名单"}
                     </Link>
+                    <DeleteEventButton
+                      batchCount={event._count.batches}
+                      eventId={event.id}
+                      eventName={event.name}
+                    />
                   </div>
                 </CardHeader>
                 <CardContent className="grid gap-3 md:grid-cols-4">
