@@ -18,6 +18,12 @@ const applicationDecisionSchema = z.object({
   note: z.string().trim().max(500, "处理备注不能超过 500 字。").optional()
 });
 
+function getApprovalEmailWaitMs() {
+  const configuredWaitMs = Number(process.env.SMTP_APPROVAL_WAIT_MS?.trim() || "5000");
+
+  return Number.isFinite(configuredWaitMs) && configuredWaitMs > 0 ? configuredWaitMs : 5000;
+}
+
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
@@ -67,21 +73,36 @@ export async function PATCH(
       let emailMessage = "";
 
       if (isEmailDeliveryConfigured()) {
-        try {
-          await sendOrganizerApprovalEmail({
-            to: approved.user.email,
-            contactName: approved.user.name,
-            organizationName: approved.organization.name,
-            setupUrl,
-            expiresAt: approved.expiresAt
-          });
+        const sendPromise = sendOrganizerApprovalEmail({
+          to: approved.user.email,
+          contactName: approved.user.name,
+          organizationName: approved.organization.name,
+          setupUrl,
+          expiresAt: approved.expiresAt
+        });
+        const emailResult = await Promise.race([
+          sendPromise.then(() => ({ status: "sent" as const })).catch((error) => ({
+            status: "failed" as const,
+            error
+          })),
+          new Promise<{ status: "timeout" }>((resolve) => {
+            setTimeout(() => resolve({ status: "timeout" }), getApprovalEmailWaitMs());
+          })
+        ]);
+
+        if (emailResult.status === "sent") {
           emailSent = true;
           emailMessage = "设密邮件已自动发送到申请邮箱。";
-        } catch (error) {
-          console.error("Failed to send organizer approval email", error);
+        } else if (emailResult.status === "timeout") {
+          sendPromise.catch((error) => {
+            console.error("Failed to send organizer approval email after approval response", error);
+          });
+          emailMessage = "主办方账号已创建，设密邮件仍在后台发送；如申请人未收到，请手动复制设密链接发送。";
+        } else {
+          console.error("Failed to send organizer approval email", emailResult.error);
           emailMessage =
-            error instanceof Error
-              ? `主办方账号已创建，但自动邮件发送失败：${error.message}`
+            emailResult.error instanceof Error
+              ? `主办方账号已创建，但自动邮件发送失败：${emailResult.error.message}`
               : "主办方账号已创建，但自动邮件发送失败。";
         }
       } else {
