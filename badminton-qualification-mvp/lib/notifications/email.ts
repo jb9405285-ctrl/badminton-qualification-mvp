@@ -29,7 +29,7 @@ function getEmailConfig(): EmailConfig | null {
   const fromEmail = process.env.SMTP_FROM_EMAIL?.trim() ?? "";
   const fromName = process.env.SMTP_FROM_NAME?.trim() || "羽毛球赛事资格核验工具";
   const replyTo = process.env.SMTP_REPLY_TO?.trim() || null;
-  const timeoutMs = Number(process.env.SMTP_TIMEOUT_MS?.trim() || "10000");
+  const timeoutMs = Number(process.env.SMTP_TIMEOUT_MS?.trim() || "20000");
 
   if (!host || !portValue || !user || !password || !fromEmail) {
     return null;
@@ -50,7 +50,7 @@ function getEmailConfig(): EmailConfig | null {
     fromEmail,
     fromName,
     replyTo,
-    timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 10000
+    timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 20000
   };
 }
 
