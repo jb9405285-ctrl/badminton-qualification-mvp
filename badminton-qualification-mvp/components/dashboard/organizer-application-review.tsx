@@ -202,6 +202,45 @@ export function OrganizerApplicationReview({
     }
   }
 
+  async function handleResendEmail(id: string) {
+    setLoadingId(id);
+
+    try {
+      const response = await fetch(`/api/admin/applications/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          action: "resendEmail"
+        })
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message || "邮件重发失败。");
+      }
+
+      toast({
+        title: "邮件已重发",
+        description: payload.message,
+        tone: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "邮件重发失败",
+        description:
+          error instanceof Error
+            ? `${error.message} 如申请人仍未收到，请复制设密链接手动发送。`
+            : "如申请人仍未收到，请复制设密链接手动发送。",
+        tone: "error",
+        durationMs: 7000
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       {items.length === 0 ? (
@@ -294,6 +333,14 @@ export function OrganizerApplicationReview({
                       <div className="mt-3 flex flex-wrap gap-3">
                         <Button onClick={() => copySetupLink(item.setupPath!)} size="sm" variant="outline">
                           复制设密链接
+                        </Button>
+                        <Button
+                          disabled={loadingId === item.id}
+                          onClick={() => handleResendEmail(item.id)}
+                          size="sm"
+                          variant="outline"
+                        >
+                          {loadingId === item.id ? "发送中..." : "重发邮件"}
                         </Button>
                         <Link
                           className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
