@@ -17,6 +17,7 @@ type EmailConfig = {
   fromEmail: string;
   fromName: string;
   replyTo: string | null;
+  timeoutMs: number;
 };
 
 function getEmailConfig(): EmailConfig | null {
@@ -28,6 +29,7 @@ function getEmailConfig(): EmailConfig | null {
   const fromEmail = process.env.SMTP_FROM_EMAIL?.trim() ?? "";
   const fromName = process.env.SMTP_FROM_NAME?.trim() || "羽毛球赛事资格核验工具";
   const replyTo = process.env.SMTP_REPLY_TO?.trim() || null;
+  const timeoutMs = Number(process.env.SMTP_TIMEOUT_MS?.trim() || "10000");
 
   if (!host || !portValue || !user || !password || !fromEmail) {
     return null;
@@ -47,7 +49,8 @@ function getEmailConfig(): EmailConfig | null {
     password,
     fromEmail,
     fromName,
-    replyTo
+    replyTo,
+    timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 10000
   };
 }
 
@@ -70,6 +73,9 @@ export async function sendOrganizerApprovalEmail(input: ApprovalEmailInput) {
     host: config.host,
     port: config.port,
     secure: config.secure,
+    connectionTimeout: config.timeoutMs,
+    greetingTimeout: config.timeoutMs,
+    socketTimeout: config.timeoutMs,
     auth: {
       user: config.user,
       pass: config.password

@@ -1,3 +1,5 @@
+const DEFAULT_PRODUCTION_ORIGIN = "https://badminton-prod-site.onrender.com";
+
 function normalizeOrigin(value: string) {
   try {
     return new URL(value).origin;
@@ -37,5 +39,11 @@ export function getPublicOrigin(request: Request) {
     return `${forwardedProto}://${forwardedHost}`;
   }
 
-  return new URL(request.url).origin;
+  const requestOrigin = new URL(request.url).origin;
+
+  if (process.env.NODE_ENV === "production" && requestOrigin.includes("0.0.0.0")) {
+    return DEFAULT_PRODUCTION_ORIGIN;
+  }
+
+  return requestOrigin;
 }
