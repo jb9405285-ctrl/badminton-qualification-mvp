@@ -136,7 +136,14 @@ export function OrganizerApplicationReview({
     }
   }
 
-  async function handleAccountAction(id: string, action: "revoke" | "restore") {
+  async function handleAccountAction(id: string, action: "revoke" | "restore" | "remove") {
+    if (
+      action === "remove" &&
+      !window.confirm("确认删除该主办方权限并从审批页移除？原邮箱会被释放，可重新提交申请。")
+    ) {
+      return;
+    }
+
     setLoadingId(id);
 
     try {
@@ -154,6 +161,16 @@ export function OrganizerApplicationReview({
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.message || "账号权限更新失败。");
+      }
+
+      if (action === "remove") {
+        setItems((current) => current.filter((item) => item.id !== id));
+        toast({
+          title: "权限已删除",
+          description: payload.message,
+          tone: "warning"
+        });
+        return;
       }
 
       setItems((current) =>
@@ -187,6 +204,13 @@ export function OrganizerApplicationReview({
 
   return (
     <div className="grid gap-4">
+      {items.length === 0 ? (
+        <Card className="border-white/80 bg-white/92 shadow-soft">
+          <CardContent className="p-6 text-sm leading-6 text-slate-600">
+            当前没有待处理或保留中的主办方申请。
+          </CardContent>
+        </Card>
+      ) : null}
       {items.map((item) => {
         const status = mapStatus(item.status);
         const isPending = item.status === "PENDING";
@@ -244,6 +268,13 @@ export function OrganizerApplicationReview({
                     >
                       拒绝申请
                     </Button>
+                    <Button
+                      disabled={loadingId === item.id}
+                      onClick={() => handleAccountAction(item.id, "remove")}
+                      variant="destructive"
+                    >
+                      移除记录
+                    </Button>
                   </div>
                 </>
               ) : (
@@ -285,6 +316,13 @@ export function OrganizerApplicationReview({
                             恢复权限
                           </Button>
                         ) : null}
+                        <Button
+                          onClick={() => handleAccountAction(item.id, "remove")}
+                          size="sm"
+                          variant="destructive"
+                        >
+                          删除权限
+                        </Button>
                       </div>
                     </div>
                   ) : item.accountReady ? (
@@ -305,6 +343,13 @@ export function OrganizerApplicationReview({
                             恢复权限
                           </Button>
                         ) : null}
+                        <Button
+                          onClick={() => handleAccountAction(item.id, "remove")}
+                          size="sm"
+                          variant="destructive"
+                        >
+                          删除权限
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -325,6 +370,13 @@ export function OrganizerApplicationReview({
                             恢复权限
                           </Button>
                         ) : null}
+                        <Button
+                          onClick={() => handleAccountAction(item.id, "remove")}
+                          size="sm"
+                          variant="destructive"
+                        >
+                          {item.status === "APPROVED" ? "删除权限" : "移除记录"}
+                        </Button>
                       </div>
                     </div>
                   )}

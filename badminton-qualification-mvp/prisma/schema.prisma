@@ -71,6 +71,9 @@ model OrganizerApplication {
   reviewNote       String?
   organizationId   String?
   approvedUserId   String?       @unique
+  removedAt        DateTime?
+  removedById      String?
+  removalNote      String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   reviewedBy       User?         @relation("OrganizerApplicationReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
@@ -79,6 +82,7 @@ model OrganizerApplication {
 
   @@index([status, createdAt])
   @@index([contactEmail, createdAt])
+  @@index([removedAt, createdAt])
 }
 
 model PasswordSetupToken {

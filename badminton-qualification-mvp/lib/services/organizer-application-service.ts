@@ -43,7 +43,8 @@ export async function createOrganizerApplication(input: CreateApplicationInput) 
   const pendingApplication = await prisma.organizerApplication.findFirst({
     where: {
       contactEmail: email,
-      status: "PENDING"
+      status: "PENDING",
+      removedAt: null
     },
     select: { id: true }
   });
@@ -111,6 +112,10 @@ export async function getOrganizerApplicationStatus(input: {
     throw new Error("申请编号或联系邮箱不匹配。");
   }
 
+  if (application.removedAt) {
+    throw new Error("该申请记录已经被平台管理员移除，请重新提交申请。");
+  }
+
   const setupToken = application.approvedUser?.passwordSetupTokens[0] ?? null;
 
   return {
@@ -130,6 +135,9 @@ export async function getOrganizerApplicationStatus(input: {
 
 export async function listOrganizerApplications() {
   return prisma.organizerApplication.findMany({
+    where: {
+      removedAt: null
+    },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     include: {
       reviewedBy: {
@@ -335,6 +343,104 @@ export async function restoreOrganizerAccess(applicationId: string, actor: User,
       }
     })
   ]);
+}
+
+function buildRemovedEmail(email: string, userId: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const atIndex = normalizedEmail.lastIndexOf("@");
+
+  if (atIndex > 0) {
+    return `${normalizedEmail.slice(0, atIndex)}+removed-${userId}${normalizedEmail.slice(atIndex)}`;
+  }
+
+  return `removed-${userId}-${normalizedEmail}`;
+}
+
+export async function removeOrganizerApplicationAccess(applicationId: string, actor: User, reviewNote?: string) {
+  const application = await prisma.organizerApplication.findUnique({
+    where: { id: applicationId },
+    include: {
+      approvedUser: {
+        select: {
+          id: true,
+          email: true,
+          role: true
+        }
+      },
+      organization: {
+        select: {
+          id: true
+        }
+      }
+    }
+  });
+
+  if (!application) {
+    throw new Error("申请不存在。");
+  }
+
+  if (application.removedAt) {
+    throw new Error("该申请已经移除。");
+  }
+
+  if (application.approvedUser?.role === "SUPER_ADMIN") {
+    throw new Error("不能移除平台管理员账号。");
+  }
+
+  const removedAt = new Date();
+  const removalNote = normalizeOptional(reviewNote) ?? "权限已删除，账号已停用并从审批页移除。";
+
+  await prisma.$transaction(async (tx) => {
+    if (application.approvedUser) {
+      await tx.session.deleteMany({
+        where: {
+          userId: application.approvedUser.id
+        }
+      });
+
+      await tx.passwordSetupToken.deleteMany({
+        where: {
+          userId: application.approvedUser.id
+        }
+      });
+
+      await tx.user.update({
+        where: {
+          id: application.approvedUser.id
+        },
+        data: {
+          email: buildRemovedEmail(application.approvedUser.email, application.approvedUser.id),
+          passwordHash: null,
+          status: "SUSPENDED"
+        }
+      });
+    }
+
+    if (application.organizationId) {
+      await tx.organization.update({
+        where: {
+          id: application.organizationId
+        },
+        data: {
+          status: "REMOVED"
+        }
+      });
+    }
+
+    await tx.organizerApplication.update({
+      where: {
+        id: application.id
+      },
+      data: {
+        removedAt,
+        removedById: actor.id,
+        removalNote,
+        reviewedAt: removedAt,
+        reviewedById: actor.id,
+        reviewNote: removalNote
+      }
+    });
+  });
 }
 
 export async function rejectOrganizerApplication(applicationId: string, actor: User, reviewNote?: string) {

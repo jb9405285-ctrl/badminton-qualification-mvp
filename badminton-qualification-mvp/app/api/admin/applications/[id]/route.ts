@@ -6,6 +6,7 @@ import { isSuperAdmin } from "@/lib/auth/access";
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   approveOrganizerApplication,
+  removeOrganizerApplicationAccess,
   rejectOrganizerApplication,
   restoreOrganizerAccess,
   revokeOrganizerAccess
@@ -14,7 +15,7 @@ import { isEmailDeliveryConfigured, sendOrganizerApprovalEmail } from "@/lib/not
 import { getPublicOrigin } from "@/lib/url";
 
 const applicationDecisionSchema = z.object({
-  action: z.enum(["approve", "reject", "revoke", "restore"]),
+  action: z.enum(["approve", "reject", "revoke", "restore", "remove"]),
   note: z.string().trim().max(500, "处理备注不能超过 500 字。").optional()
 });
 
@@ -135,6 +136,15 @@ export async function PATCH(
       return NextResponse.json({
         ok: true,
         message: "主办方账号权限已恢复。"
+      });
+    }
+
+    if (parsed.data.action === "remove") {
+      await removeOrganizerApplicationAccess(params.id, user, parsed.data.note);
+
+      return NextResponse.json({
+        ok: true,
+        message: "权限已删除，该记录已从审批页移除；原邮箱可以重新提交申请。"
       });
     }
 
